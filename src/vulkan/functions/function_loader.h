@@ -4,12 +4,11 @@
 #include <vulkan/vulkan.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "./functions.h"
 
-bool load_global_functions(const PFN_vkGetInstanceProcAddr vk_GetInstanceProcAddr);
-// bool load_instance_vulkan_functions(vk_functions *vk, VkInstance instance, 
-// 	const char loaded_extensions[MAX_VULKAN_EXTENSIONS][VK_MAX_EXTENSION_NAME_SIZE],
-// 	uint32_t extensions_count);
+bool load_external_function(PFN_vkGetInstanceProcAddr vk_get_proc);
+bool load_global_functions();
+bool load_instance_vulkan_functions(VkInstance instance, 
+    const char **loaded_extensions, uint32_t extension_count);
 // bool load_device_level_functions(vk_functions *vk, VkDevice device, 
 // 	const char loaded_extensions[MAX_VULKAN_EXTENSIONS][VK_MAX_EXTENSION_NAME_SIZE],
 // 	uint32_t extensions_count);

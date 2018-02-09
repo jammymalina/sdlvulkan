@@ -4,22 +4,74 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <vulkan/vulkan.h>
-#include "./vulkan_utils/functions/functions.h"
-#include "./vulkan_utils/functions/function_loader.h"
-
+#include "./vulkan/functions/functions.h"
+#include "./vulkan/functions/function_loader.h"
+#include "./logger/logger.h"
 
 void quit(int rc);
 
-static PFN_vkGetInstanceProcAddr vk_GetInstanceProcAddr = NULL;
+VkInstance instance = NULL;
 
-bool load() {
-	vk_GetInstanceProcAddr = SDL_Vulkan_GetVkGetInstanceProcAddr();
-	if(!vk_GetInstanceProcAddr) {
+bool create_instance(SDL_Window *window) {
+	const char **extensions = NULL;
+    unsigned extension_count = 0;
+
+	 if(!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, NULL)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "SDL_Vulkan_GetInstanceExtensions(): %s\n", SDL_GetError());
+        quit(EXIT_FAILURE);
+    }
+    extensions = SDL_malloc(sizeof(const char*) * extension_count);
+    if(!extensions) {
+        SDL_OutOfMemory();
+        quit(EXIT_FAILURE);
+    }
+    if(!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions)) {
+        SDL_free(extensions);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "SDL_Vulkan_GetInstanceExtensions(): %s\n", SDL_GetError());
+        quit(EXIT_FAILURE);
+    }
+
+	VkApplicationInfo vk_application_info = {
+		.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pNext              = NULL,
+		.pApplicationName   = "SDL test app",
+		.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+		.pEngineName        = "Custom engine",
+		.engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+		.apiVersion         = VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION)
+	};
+
+	VkInstanceCreateInfo vk_instance_create_info = {
+		.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pNext                   = NULL,
+		.flags                   = 0,
+		.pApplicationInfo        = &vk_application_info,
+		.enabledLayerCount       = 0,
+		.ppEnabledLayerNames     = NULL,
+		.enabledExtensionCount   = extension_count,
+		.ppEnabledExtensionNames = extensions
+	};
+
+	VkResult result = vk_CreateInstance(&vk_instance_create_info, NULL, &instance);
+	if (result != VK_SUCCESS || instance == VK_NULL_HANDLE) {
+		instance = NULL;
+		error_log("Could not create Vulkan instance");
+        quit(EXIT_FAILURE);
+	}
+
+	return load_instance_vulkan_functions(instance, extensions, extension_count);
+}
+
+bool init_vulkan_function_loader() {
+	PFN_vkGetInstanceProcAddr vk_get_proc = SDL_Vulkan_GetVkGetInstanceProcAddr();
+	if(!vk_get_proc) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_Vulkan_GetVkGetInstanceProcAddr error: %s\n", 
 			SDL_GetError());
 		return false;
     }
-	return load_global_functions(vk_GetInstanceProcAddr);
+	return load_external_function(vk_get_proc);
 }
 
 bool init_SDL() {
@@ -40,8 +92,10 @@ void shutdown_SDL() {
 	SDL_Quit();
 }
 
-bool init_vulkan() {
-	return load();
+bool init_vulkan(SDL_Window *window) {
+	return init_vulkan_function_loader() &&
+		load_global_functions() &&
+		create_instance(window);
 }
 
 void shutdown_vulkan() {
@@ -70,7 +124,7 @@ int main(int argc, char* args[]) {
 	SDL_Vulkan_GetDrawableSize(window, &dw, &dh);
 	SDL_Log("Draw Size: %d, %d\n", dw, dh);
 
-	if (!init_vulkan()) {
+	if (!init_vulkan(window)) {
 		quit(EXIT_FAILURE);
 	}
 
