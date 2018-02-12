@@ -9,12 +9,25 @@
 #include "./vulkan/functions/function_loader.h"
 #include "./logger/logger.h"
 #include "./vulkan/tools/tools.h"
+#include "./utils/heap.h"
 
 #define MAX_VULKAN_PHYSICAL_DEVICES 8
 
 void quit(int rc);
 
-typedef struct gvicpu_info {
+typedef struct vk_context {
+	VkInstance instance;
+	VkSurfaceKHR surface;
+	VkDevice device;
+} vk_context;
+
+void init_vk_context(vk_context *ctx) {
+	ctx->instance = VK_NULL_HANDLE;
+	ctx->surface = VK_NULL_HANDLE;
+	ctx->device = VK_NULL_HANDLE;	
+}
+
+typedef struct gpu_info {
 	VkPhysicalDevice device;
 	VkPhysicalDeviceProperties props;
 	VkPhysicalDeviceMemoryProperties mem_props;
@@ -24,11 +37,9 @@ typedef struct gvicpu_info {
 	VkExtensionProperties *extensions_props;
 } gpu_info;
 
-VkInstance instance = VK_NULL_HANDLE;
-VkSurfaceKHR surface = VK_NULL_HANDLE;
-VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+vk_context vk_ctx;
 
-bool create_instance(SDL_Window *window) {
+bool create_instance(vk_context *ctx, SDL_Window *window) {
 	const char **extensions = NULL;
     unsigned extension_count = 0;
 
@@ -36,13 +47,13 @@ bool create_instance(SDL_Window *window) {
         log_error("SDL_Vulkan_GetInstanceExtensions(): %s", SDL_GetError());
         quit(EXIT_FAILURE);
     }
-    extensions = SDL_malloc(sizeof(const char*) * extension_count);
+    extensions = mem_alloc(sizeof(const char*) * extension_count);
     if(!extensions) {
         SDL_OutOfMemory();
         quit(EXIT_FAILURE);
     }
     if(!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions)) {
-        SDL_free(extensions);
+        mem_free(extensions);
         log_error("SDL_Vulkan_GetInstanceExtensions(): %s", SDL_GetError());
         quit(EXIT_FAILURE);
     }
@@ -68,9 +79,9 @@ bool create_instance(SDL_Window *window) {
 		.ppEnabledExtensionNames = extensions
 	};
 
-	VkResult result = vk_CreateInstance(&vk_instance_create_info, NULL, &instance);
-	if (result != VK_SUCCESS || instance == VK_NULL_HANDLE) {
-		instance = VK_NULL_HANDLE;
+	VkResult result = vk_CreateInstance(&vk_instance_create_info, NULL, &ctx->instance);
+	if (result != VK_SUCCESS || ctx->instance == VK_NULL_HANDLE) {
+		ctx->instance = VK_NULL_HANDLE;
 		log_error("Could not create Vulkan instance: %s", vulkan_result_to_string(result));
         quit(EXIT_FAILURE);
 	}
@@ -78,8 +89,8 @@ bool create_instance(SDL_Window *window) {
 	return true;
 }
 
-bool create_surface(SDL_Window *window) {
-	if (!SDL_Vulkan_CreateSurface(window, instance, &surface)) {
+bool create_surface(vk_context *ctx, SDL_Window *window) {
+	if (!SDL_Vulkan_CreateSurface(window, ctx->instance, &ctx->surface)) {
 		log_error("SDL_Vulkan_CreateSurface(): %s", SDL_GetError());
 		quit(EXIT_FAILURE);
 	}
@@ -95,7 +106,7 @@ bool init_vulkan_function_loader() {
 	return load_external_function(vk_get_proc);
 }
 
-bool find_physical_device() {
+bool enumerate_physical_devices(vk_context *ctx) {
 	uint32_t physical_device_count = 0;
 	VkPhysicalDevice physical_devices[MAX_VULKAN_PHYSICAL_DEVICES];
 	VkQueueFamilyProperties *queue_family_props = NULL; 
@@ -104,7 +115,7 @@ bool find_physical_device() {
 	uint32_t device_ext_allocated_size = 0;	
 	uint32_t physical_device_index;
 
-	VkResult result = vk_EnumeratePhysicalDevices(instance, &physical_device_count, NULL);
+	VkResult result = vk_EnumeratePhysicalDevices(ctx->instance, &physical_device_count, NULL);
 	if (result != VK_SUCCESS) {
 		log_error("vkEnumeratePhysicalDevices error: %s", vulkan_result_to_string(result));
 	   quit(EXIT_FAILURE);	
@@ -120,7 +131,7 @@ bool find_physical_device() {
 		quit(EXIT_FAILURE);
 	}
 
-	result = vk_EnumeratePhysicalDevices(instance, &physical_device_count, physical_devices);
+	result = vk_EnumeratePhysicalDevices(ctx->instance, &physical_device_count, physical_devices);
 
 	if (result != VK_SUCCESS) {
 		SDL_free(physical_devices);
@@ -155,20 +166,28 @@ void shutdown_SDL() {
 	SDL_Quit();
 }
 
-bool init_vulkan(SDL_Window *window) {
+bool init_vulkan(vk_context *ctx, SDL_Window *window) {
+	init_vk_context(ctx);
 	return init_vulkan_function_loader() &&
 		load_global_functions() &&
-		create_instance(window) && 
-		load_instance_vulkan_functions(instance) &&
-		create_surface(window);
+		create_instance(ctx, window) && 
+		load_instance_vulkan_functions(ctx->instance) &&
+		create_surface(ctx, window);
 }
 
-void shutdown_vulkan() {
+void shutdown_vulkan(vk_context *ctx) {
+	if (ctx->surface && vk_DestroySurfaceKHR) {	
+		vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
+	}
+	if (ctx->instance && vk_DestroyInstance) {	
+		vk_DestroyInstance(ctx->instance, NULL);
+	}
+	init_vk_context(ctx);
 	SDL_Vulkan_UnloadLibrary();
 }
 
 void quit(int rc) {
-    shutdown_vulkan(); 
+    shutdown_vulkan(&vk_ctx); 
 	shutdown_SDL();  
     exit(rc);
 }
@@ -189,7 +208,7 @@ int main(int argc, char* args[]) {
 	SDL_Vulkan_GetDrawableSize(window, &dw, &dh);
 	log_info("Draw Size: %d, %d", dw, dh);
 
-	if (!init_vulkan(window)) {
+	if (!init_vulkan(&vk_ctx, window)) {
 		quit(EXIT_FAILURE);
 	}
 
