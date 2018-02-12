@@ -27,10 +27,10 @@ bool load_global_functions() {
 	#define GLOBAL_LEVEL_VULKAN_FUNCTION(name)                                           \
 		vk_##name = (PFN_vk##name) vk_GetInstanceProcAddr(NULL, "vk" #name);             \
 		if(vk_##name == NULL) {                                                          \
-			error_log("Could not load global level function: vk" #name);                 \
+			log_error("Could not load global level function: vk" #name);                 \
 			return false;                                                                \
 		} else {                                                                         \
-			debug_log("Successfully loaded global Vulkan function: vk" #name);           \
+			log_debug("Successfully loaded global Vulkan function: vk" #name);           \
 		}
 
 	#include "list.inl"
@@ -38,26 +38,25 @@ bool load_global_functions() {
 	return true;
 }
 
-bool load_instance_vulkan_functions(VkInstance instance, 
-    const char **loaded_extensions, uint32_t extension_count)
+bool load_instance_vulkan_functions(VkInstance instance)
 {
-	#define INSTANCE_LEVEL_VULKAN_FUNCTION(name)                                         \
-		vk_##name = (PFN_vk##name) vk_GetInstanceProcAddr(instance, "vk" #name);         \
-		if (vk_##name == NULL) {                                                          \
-			error_log("Could not load instance level function: vk" #name);               \
-			return false;                                                                \
-		} else {                                                                         \
-			debug_log("Successfully loaded instance level function: vk" #name);          \
-		}
-
-	#define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name)               \
+	#define INSTANCE_LEVEL_VULKAN_FUNCTION(name)                                 \
 		vk_##name = (PFN_vk##name) vk_GetInstanceProcAddr(instance, "vk" #name); \
-		if (vk_##name == NULL) {                                                  \
-			error_log("Could not load instance level function: vk" #name);       \
+		if (vk_##name == NULL) {                                                 \
+			log_error("Could not load instance level function: vk" #name);       \
 			return false;                                                        \
 		} else {                                                                 \
-			debug_log("Successfully loaded instance level function: vk" #name);  \
-		}                                                                        
+			log_debug("Successfully loaded instance level function: vk" #name);  \
+		}
+
+	#define INSTANCE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name)                  \
+		vk_##name = (PFN_vk##name) vk_GetInstanceProcAddr(instance, "vk" #name); \
+		if (vk_##name == NULL) {                                                 \
+			log_error("Could not load instance level function: vk" #name);       \
+			return false;                                                        \
+		} else {                                                                 \
+			log_debug("Successfully loaded instance level function: vk" #name);  \
+		}
 
 	#include "list.inl"
 
@@ -71,10 +70,10 @@ bool load_instance_vulkan_functions(VkInstance instance,
 // 	#define DEVICE_LEVEL_VULKAN_FUNCTION(name)                                           \
 // 		vk->name = (PFN_vk##name) vk->GetDeviceProcAddr(device, "vk" #name);             \
 // 		if (vk->name == NULL) {                                                          \
-// 			error_log("Could not load device level function: vk" #name);                 \
+// 			log_error("Could not load device level function: vk" #name);                 \
 // 			return false;                                                                \
 // 		} else {                                                                         \
-// 			debug_log("Successfully loaded device level function: vk" #name);            \
+// 			log_debug("Successfully loaded device level function: vk" #name);            \
 // 		}
 
 // 	#define DEVICE_LEVEL_VULKAN_FUNCTION_FROM_EXTENSION(name, extension)                 \
@@ -82,10 +81,10 @@ bool load_instance_vulkan_functions(VkInstance instance,
 // 			if (strcmp(extension, loaded_extensions[i]) == 0) {                          \
 // 				vk->name = (PFN_vk##name) vk->GetDeviceProcAddr(device, "vk" #name);     \
 // 				if (vk->name == NULL) {                                                  \
-// 					error_log("Could not load device level function: vk" #name);         \
+// 					log_error("Could not load device level function: vk" #name);         \
 // 					return false;                                                        \
 // 				} else {                                                                 \
-// 					debug_log("Successfully loaded device level function: vk" #name);    \
+// 					log_debug("Successfully loaded device level function: vk" #name);    \
 // 				}                                                                        \
 // 			}                                                                            \
 // 		}
