@@ -2,6 +2,18 @@
 #define HEAP_UTILS_H
 
 #include <stddef.h>
+#include "../logger/logger.h"
+
+#define CHECK_ALLOC(x, s)                          \
+	do {                                           \
+		if ((x) == NULL) {                         \
+			SDL_OutOfMemory();                     \
+			log_error("%s: %s", s, #x " == NULL"); \
+			return false;                          \
+		}                                          \
+	} while (0)
+
+
 
 void *mem_alloc(size_t size);
 void mem_free(void *data);

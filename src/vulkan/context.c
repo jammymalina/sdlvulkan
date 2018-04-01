@@ -1,18 +1,19 @@
 #include "./context.h"
 
 #include <SDL2/SDL_vulkan.h>
+#include <stdint.h>
 #include "./functions/functions.h"
 #include "./functions/function_loader.h"
 #include "../logger/logger.h"
 #include "../utils/heap.h"
 #include "./tools/tools.h"
 
-#define MAX_VULKAN_PHYSICAL_DEVICES 8
-
 static void init_vk_context(vk_context *ctx) {
 	ctx->instance = VK_NULL_HANDLE;
 	ctx->surface = VK_NULL_HANDLE;
-	ctx->device = VK_NULL_HANDLE;	
+	ctx->device = VK_NULL_HANDLE;
+	ctx->gpus = NULL;
+	ctx->gpus_size = 0;
 }
 
 static bool create_instance(vk_context *ctx, SDL_Window *window) {
@@ -58,6 +59,7 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
 	VkResult result = vk_CreateInstance(&vk_instance_create_info, NULL, &ctx->instance);
 	if (result != VK_SUCCESS || ctx->instance == VK_NULL_HANDLE) {
 		ctx->instance = VK_NULL_HANDLE;
+		mem_free(extensions);
 		log_error("Could not create Vulkan instance: %s", vulkan_result_to_string(result));
         return false;
 	}
@@ -83,43 +85,30 @@ static bool init_vulkan_function_loader() {
 }
 
 static bool enumerate_physical_devices(vk_context *ctx) {
-	uint32_t physical_device_count = 0;
-	VkPhysicalDevice physical_devices[MAX_VULKAN_PHYSICAL_DEVICES];
-	VkQueueFamilyProperties *queue_family_props = NULL; 
-	uint32_t queue_props_allocated_size = 0;
-	VkExtensionProperties *device_extensions = NULL;
-	uint32_t device_ext_allocated_size = 0;	
-	uint32_t physical_device_index;
+	uint32_t num_physical_devices = 0;
+	VkPhysicalDevice physical_devices[MAX_PHYSICAL_DEVICES];	
 
-	VkResult result = vk_EnumeratePhysicalDevices(ctx->instance, &physical_device_count, NULL);
-	if (result != VK_SUCCESS) {
-		log_error("vkEnumeratePhysicalDevices error: %s", vulkan_result_to_string(result));
-	    return false;	
+	CHECK_VK(vk_EnumeratePhysicalDevices(ctx->instance, &num_physical_devices, NULL));
+	CHECK_VK_VAL(num_physical_devices > 0, "No physical_devices");
+	CHECK_VK_VAL(num_physical_devices <= MAX_PHYSICAL_DEVICES, "Not enough space for physical devices");	
+
+	CHECK_VK(vk_EnumeratePhysicalDevices(ctx->instance, &num_physical_devices, physical_devices));
+	CHECK_VK_VAL(num_physical_devices > 0, "No physical devices");
+
+	ctx->gpus = mem_alloc(num_physical_devices * sizeof(gpu_info));
+	CHECK_ALLOC(ctx->gpus, "Allocation fail");
+
+	for (size_t i = 0; i < num_physical_devices; i++) {
+		init_gpu_info(&ctx->gpus[i]);
+		bool ret = init_gpu_info_props(&ctx->gpus[i], physical_devices[i], ctx->surface);
+		if (!ret) {
+			log_error("Could not init gpu %lu properties", i);
+			return false;
+		}
 	}
 
-	if (physical_device_count == 0) {
-		log_error("No physical devices");
-	    return false;
-	}
-
-	if (physical_device_count > MAX_VULKAN_PHYSICAL_DEVICES) {
-		log_error("Not enough space for all physical_devices");
-	    return false;
-	}
-
-	result = vk_EnumeratePhysicalDevices(ctx->instance, &physical_device_count, physical_devices);
-
-	if (result != VK_SUCCESS) {
-		SDL_free(physical_devices);
-		log_error("vkEnumeratePhysicalDevices error: %s", vulkan_result_to_string(result));
-		return false;
-	}
-
-	for (size_t i = 0; i < physical_device_count; i++) {
-		uint32_t queue_family_count = 0;
-		uint32_t queue_family_index;
-		uint32_t device_ext_count = 0;
-	}
+	ctx->gpus_size = num_physical_devices;
+	log_info("Number of gpus found: %d", ctx->gpus_size);
 
 	return true;
 }
@@ -130,10 +119,17 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 		load_global_functions() &&
 		create_instance(ctx, window) && 
 		load_instance_vulkan_functions(ctx->instance) &&
-		create_surface(ctx, window);
+		create_surface(ctx, window) &&
+		enumerate_physical_devices(ctx);
 }
 
 void shutdown_vulkan(vk_context *ctx) {
+	if (ctx->gpus_size > 0) {
+		for (size_t i = 0; i < ctx->gpus_size; i++) {
+			free_gpu_info(&ctx->gpus[i]);
+		}
+		mem_free(ctx->gpus);
+	}
 	if (ctx->surface && vk_DestroySurfaceKHR) {	
 		vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
 	}
