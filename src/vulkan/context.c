@@ -12,6 +12,8 @@ static void init_vk_context(vk_context *ctx) {
 	ctx->instance = VK_NULL_HANDLE;
 	ctx->surface = VK_NULL_HANDLE;
 	ctx->device = VK_NULL_HANDLE;
+	ctx->graphics_queue = VK_NULL_HANDLE;
+	ctx->present_queue = VK_NULL_HANDLE;
 	ctx->gpus = NULL;
 	ctx->gpus_size = 0;
 }
@@ -25,11 +27,8 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
         return false;
     }
     extensions = mem_alloc(sizeof(const char*) * extension_count);
-    if(!extensions) {
-        SDL_OutOfMemory();
-        return false;
-    }
-    if(!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions)) {
+    CHECK_ALLOC(extensions, "Allocation fail");
+    if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions)) {
         mem_free(extensions);
         log_error("SDL_Vulkan_GetInstanceExtensions(): %s", SDL_GetError());
         return false;
@@ -113,6 +112,74 @@ static bool enumerate_physical_devices(vk_context *ctx) {
 	return true;
 }
 
+static bool choose_suitable_graphics_gpu(vk_context *ctx) {
+	for (uint32_t i = 0; i < ctx->gpus_size; i++) {
+		if (is_gpu_suitable_for_graphics(&ctx->gpus[i], ctx->surface,
+			&ctx->graphics_family_index, &ctx->present_family_index)) 
+		{
+			log_info("Found suitable gpu");
+			ctx->selected_gpu = i;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool create_device(vk_context *ctx) {
+	uint32_t indices[] = { ctx->graphics_family_index, ctx->present_family_index };
+	
+	VkDeviceQueueCreateInfo devq_info[2];
+	const float priority = 1.0f;
+	for (uint32_t i = 0; i < 2; i++) {
+		VkDeviceQueueCreateInfo qinfo = {
+			.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			.pNext            = NULL,
+			.queueFamilyIndex = indices[i],
+			.queueCount       = 1,
+			.pQueuePriorities = &priority
+		};
+		devq_info[i] = qinfo;
+	}
+
+	gpu_info *gpu = &ctx->gpus[ctx->selected_gpu];
+
+	VkPhysicalDeviceFeatures device_features = {};
+	device_features.textureCompressionBC = VK_TRUE;
+	device_features.imageCubeArray = VK_TRUE;
+	device_features.depthClamp = VK_TRUE;
+	device_features.depthBiasClamp = VK_TRUE;
+	device_features.depthBounds = gpu->features.depthBounds;
+	device_features.fillModeNonSolid = VK_TRUE;
+
+	VkDeviceCreateInfo info = {
+		.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.pNext                   = NULL,
+		.flags                   = 0,
+		.queueCreateInfoCount    = 2,
+		.pQueueCreateInfos       = devq_info,
+		.enabledLayerCount       = 0,
+		.ppEnabledLayerNames     = NULL,
+		.enabledExtensionCount   = GRAPHICS_DEVICE_EXTENSIONS_SIZE,
+		.ppEnabledExtensionNames = GRAPHICS_DEVICE_EXTENSIONS,
+		.pEnabledFeatures        = &device_features
+	};
+
+	CHECK_VK(vk_CreateDevice(gpu->device, &info, NULL, &ctx->device));
+	
+	return true;
+}
+
+static bool init_queues(vk_context *ctx) {
+	vk_GetDeviceQueue(ctx->device, ctx->graphics_family_index, 0, &ctx->graphics_queue);
+	if (ctx->graphics_family_index == ctx->present_family_index) {
+		ctx->present_queue = ctx->graphics_queue;
+	} else {
+		vk_GetDeviceQueue(ctx->device, ctx->present_family_index, 0, &ctx->present_queue);
+	}
+	return true;
+}
+
 bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 	init_vk_context(ctx);
 	return init_vulkan_function_loader() &&
@@ -120,7 +187,11 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 		create_instance(ctx, window) && 
 		load_instance_vulkan_functions(ctx->instance) &&
 		create_surface(ctx, window) &&
-		enumerate_physical_devices(ctx);
+		enumerate_physical_devices(ctx) &&
+		choose_suitable_graphics_gpu(ctx) &&
+		create_device(ctx) &&
+		load_device_level_functions(ctx->device) &&
+		init_queues(ctx);
 }
 
 void shutdown_vulkan(vk_context *ctx) {
@@ -129,6 +200,9 @@ void shutdown_vulkan(vk_context *ctx) {
 			free_gpu_info(&ctx->gpus[i]);
 		}
 		mem_free(ctx->gpus);
+	}
+	if (ctx->device && vk_DestroyDevice) {
+        vk_DestroyDevice(ctx->device, NULL);
 	}
 	if (ctx->surface && vk_DestroySurfaceKHR) {	
 		vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);

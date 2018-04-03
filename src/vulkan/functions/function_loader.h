@@ -8,9 +8,7 @@
 bool load_external_function(PFN_vkGetInstanceProcAddr vk_get_proc);
 bool load_global_functions();
 bool load_instance_vulkan_functions(VkInstance instance);
-// bool load_device_level_functions(vk_functions *vk, VkDevice device, 
-// 	const char loaded_extensions[MAX_VULKAN_EXTENSIONS][VK_MAX_EXTENSION_NAME_SIZE],
-// 	uint32_t extensions_count);
+bool load_device_level_functions(VkDevice device);
 
 #endif // VULKAN_FUNCTION_LOADER_H
 

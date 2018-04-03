@@ -15,6 +15,13 @@ typedef struct vk_context {
 
 	gpu_info *gpus;
 	uint32_t gpus_size;
+	uint32_t selected_gpu;
+
+	uint32_t graphics_family_index;
+	uint32_t present_family_index;
+
+	VkQueue graphics_queue;
+	VkQueue present_queue;
 } vk_context;
 
 bool init_vulkan(vk_context *ctx, SDL_Window *window);

@@ -1,16 +1,22 @@
 #ifndef GPU_INFO_H
 #define GPU_INFO_H
 
+#include <stddef.h>
 #include <stdbool.h>
 #include <vulkan/vulkan.h>
 #include <stdint.h>
+
+#define GRAPHICS_DEVICE_EXTENSIONS_SIZE 1
+static const char *const GRAPHICS_DEVICE_EXTENSIONS[] = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+};
 
 typedef struct gpu_info {
 	VkPhysicalDevice device;
 	VkPhysicalDeviceFeatures features;
 	VkPhysicalDeviceProperties props;
 	VkPhysicalDeviceMemoryProperties mem_props;
-	VkSurfaceCapabilitiesKHR suface_caps;
+	VkSurfaceCapabilitiesKHR surface_caps;
 	
 	VkSurfaceFormatKHR *surface_formats;
 	uint32_t surface_formats_size;
@@ -25,8 +31,11 @@ typedef struct gpu_info {
 	uint32_t present_modes_size;
 } gpu_info;
 
-void init_gpu_info(gpu_info *gi);
-bool init_gpu_info_props(gpu_info *gi, VkPhysicalDevice device, VkSurfaceKHR surface);
-void free_gpu_info(gpu_info *gi);
+void init_gpu_info(gpu_info *gpu);
+bool init_gpu_info_props(gpu_info *gpu, VkPhysicalDevice device, VkSurfaceKHR surface);
+bool check_desired_extensions(gpu_info *gpu, const char *const desired_extensions[], size_t desired_extensions_size);
+bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
+	uint32_t *graphics_index, uint32_t *present_index);
+void free_gpu_info(gpu_info *gpu);
 
 #endif // GPU_INFO_H

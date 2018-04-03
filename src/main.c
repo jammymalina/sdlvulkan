@@ -7,10 +7,12 @@
 #include <vulkan/vulkan.h>
 #include "./logger/logger.h"
 #include "./vulkan/context.h"
+#include "./string/string.h"
 
 void quit(int rc);
 
 vk_context vk_ctx;
+
 
 bool init_SDL() {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
