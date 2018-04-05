@@ -101,6 +101,69 @@ bool check_desired_extensions(gpu_info *gpu, const char *const desired_extension
 	return available == required;
 }
 
+bool choose_surface_format(gpu_info *gpu, VkSurfaceFormatKHR *result) {
+	if (gpu->surface_formats_size == 0) {
+		return false;
+	}
+
+	// If Vulkan returned an unknown format, then just force what we want.
+	if (gpu->surface_formats_size == 1 && gpu->surface_formats[0].format == VK_FORMAT_UNDEFINED) {
+		result->format = VK_FORMAT_B8G8R8A8_UNORM;
+		result->colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		return true;
+	}
+
+	// Favor 32 bit rgba and srgb nonlinear colorspace
+	for (size_t i = 0; i < gpu->surface_formats_size; i++) {
+		VkSurfaceFormatKHR  *fmt = &gpu->surface_formats[i];
+		if (fmt->format == VK_FORMAT_B8G8R8A8_UNORM && fmt->colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			result->format = fmt->format;
+			result->colorSpace = fmt->colorSpace;
+			return true;
+		}
+	}
+
+	// If all else fails, just return what's available
+	result->format = gpu->surface_formats[0].format;
+	result->colorSpace = gpu->surface_formats[0].colorSpace; 	 
+	return true;
+}
+
+bool choose_present_mode(gpu_info *gpu, VkPresentModeKHR *result) {
+	if (gpu->present_modes_size == 0) {
+		return false;
+	}
+
+	const VkPresentModeKHR desired_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+
+	// Favor looking for mailbox mode.
+	for (size_t i = 0; i < gpu->present_modes_size; i++) {
+		if (gpu->present_modes[i] == desired_mode) {
+			*result = desired_mode;
+			return true;
+		}
+	}
+
+	// If we couldn't find mailbox, then default to FIFO which is always available.
+	*result = VK_PRESENT_MODE_FIFO_KHR;
+	return true;
+}
+
+bool choose_extent(gpu_info *gpu, VkExtent2D *result, VkExtent2D *window_size) {
+	// The extent is typically the size of the window we created the surface from.
+	// However if Vulkan returns -1 then simply substitute the window size.
+	if (gpu->surface_caps.currentExtent.width == -1) {
+		result->width = window_size->width;
+		result->height = window_size->height;
+	} else {
+		result->width = gpu->surface_caps.currentExtent.width;
+		result->height = gpu->surface_caps.currentExtent.height;		
+	}
+
+	return true;
+
+}
+
 bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	uint32_t *graphics_index, uint32_t *present_index) 
 {
@@ -116,6 +179,10 @@ bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	}
 
 	if (!gpu->features.geometryShader) {
+		return false;
+	}
+
+	if (!(gpu->surface_caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
 		return false;
 	}
 
@@ -151,7 +218,6 @@ int rate_gpu(gpu_info *gpu) {
 	if (gpu->props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
 		score += 1000;
 	}
-	score += gpu->props.limits.maxImageDimension2D;
 
 	return score;
 }

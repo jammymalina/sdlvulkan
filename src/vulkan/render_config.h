@@ -1,0 +1,7 @@
+#ifndef RENDER_CONFIG_H
+#define RENDER_CONFIG_H
+
+#define MAX_PHYSICAL_DEVICES 32
+#define NUM_FRAME_DATA 2
+
+#endif // RENDER_CONFIG_H

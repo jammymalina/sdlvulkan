@@ -14,6 +14,12 @@ static void init_vk_context(vk_context *ctx) {
 	ctx->device = VK_NULL_HANDLE;
 	ctx->graphics_queue = VK_NULL_HANDLE;
 	ctx->present_queue = VK_NULL_HANDLE;
+	ctx->command_pool = VK_NULL_HANDLE;
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		ctx->acquire_semaphores[i] = VK_NULL_HANDLE;
+		ctx->render_complete_semaphores[i] = VK_NULL_HANDLE;
+		ctx->command_buffer_fences[i] = VK_NULL_HANDLE;
+	}
 	ctx->gpus = NULL;
 	ctx->gpus_size = 0;
 }
@@ -182,6 +188,57 @@ static bool init_queues(vk_context *ctx) {
 	} else {
 		vk_GetDeviceQueue(ctx->device, ctx->present_family_index, 0, &ctx->present_queue);
 	}
+
+	return true;
+}
+
+static bool create_semaphores(vk_context *ctx) {
+	VkSemaphoreCreateInfo sempahore_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = NULL,
+		.flags = 0
+	};
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->acquire_semaphores[i]));
+		CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->render_complete_semaphores[i]));		
+	}
+	return true;
+}
+
+static bool create_command_pool(vk_context *ctx) {
+	VkCommandPoolCreateInfo pool_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.pNext = NULL,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+		.queueFamilyIndex = ctx->graphics_family_index 
+	};
+
+	CHECK_VK(vk_CreateCommandPool(ctx->device, &pool_info, NULL, &ctx->command_pool));
+
+	return true;
+}
+
+static bool create_command_buffers(vk_context *ctx) {
+	VkCommandBufferAllocateInfo allocate_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext = NULL,
+		.commandPool = ctx->command_pool,
+		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = NUM_FRAME_DATA
+	};
+
+	CHECK_VK(vk_AllocateCommandBuffers(ctx->device, &allocate_info, ctx->command_buffers));
+
+	VkFenceCreateInfo fence_info = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = NULL,
+		.flags = 0
+	};
+
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		CHECK_VK(vk_CreateFence(ctx->device, &fence_info, NULL, &ctx->command_buffer_fences[i]));
+	}
+
 	return true;
 }
 
@@ -196,10 +253,36 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 		choose_suitable_graphics_gpu(ctx) &&
 		create_device(ctx) &&
 		load_device_level_functions(ctx->device) &&
-		init_queues(ctx);
+		init_queues(ctx) &&
+		create_semaphores(ctx) &&
+		create_command_pool(ctx) && 
+		create_command_buffers(ctx);
 }
 
 void shutdown_vulkan(vk_context *ctx) {
+	if (vk_DestroyFence) {
+		for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+			if (ctx->command_buffer_fences[i]) {
+				vk_DestroyFence(ctx->device, ctx->command_buffer_fences[i], NULL);
+			}
+		}
+	}
+	if (vk_FreeCommandBuffers && ctx->command_buffers[0]) {
+		vk_FreeCommandBuffers(ctx->device, ctx->command_pool, NUM_FRAME_DATA, ctx->command_buffers);
+	}
+	if (vk_DestroyCommandPool && ctx->command_pool) {
+		vk_DestroyCommandPool(ctx->device, ctx->command_pool, NULL);
+	}
+	if (vk_DestroySemaphore) {
+		for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+			if (ctx->acquire_semaphores[i]) {
+				vk_DestroySemaphore(ctx->device, ctx->acquire_semaphores[i], NULL);
+			}
+			if (ctx->render_complete_semaphores[i]) {
+				vk_DestroySemaphore(ctx->device, ctx->render_complete_semaphores[i], NULL);
+			}
+		}
+	}
 	if (ctx->gpus_size > 0) {
 		for (size_t i = 0; i < ctx->gpus_size; i++) {
 			free_gpu_info(&ctx->gpus[i]);

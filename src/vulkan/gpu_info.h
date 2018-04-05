@@ -36,6 +36,9 @@ bool init_gpu_info_props(gpu_info *gpu, VkPhysicalDevice device, VkSurfaceKHR su
 bool check_desired_extensions(gpu_info *gpu, const char *const desired_extensions[], size_t desired_extensions_size);
 bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	uint32_t *graphics_index, uint32_t *present_index);
+bool choose_surface_format(gpu_info *gpu, VkSurfaceFormatKHR *result);
+bool choose_present_mode(gpu_info *gpu, VkPresentModeKHR *result);
+bool choose_extent(gpu_info *gpu, VkExtent2D *result, VkExtent2D *window_size);
 int rate_gpu(gpu_info *gpu);
 void free_gpu_info(gpu_info *gpu);
 

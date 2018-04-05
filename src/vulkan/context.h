@@ -5,8 +5,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "./gpu_info.h"
-
-#define MAX_PHYSICAL_DEVICES 32
+#include "./render_config.h"
 
 typedef struct vk_context {
 	VkInstance instance;
@@ -22,6 +21,13 @@ typedef struct vk_context {
 
 	VkQueue graphics_queue;
 	VkQueue present_queue;
+
+	VkSemaphore acquire_semaphores[NUM_FRAME_DATA];
+	VkSemaphore render_complete_semaphores[NUM_FRAME_DATA];
+
+	VkCommandPool command_pool;
+	VkCommandBuffer command_buffers[NUM_FRAME_DATA];
+	VkFence command_buffer_fences[NUM_FRAME_DATA];
 } vk_context;
 
 bool init_vulkan(vk_context *ctx, SDL_Window *window);

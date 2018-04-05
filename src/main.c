@@ -13,7 +13,6 @@ void quit(int rc);
 
 vk_context vk_ctx;
 
-
 bool init_SDL() {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
 		log_error("Error while initializing SDL: %s", SDL_GetError());
