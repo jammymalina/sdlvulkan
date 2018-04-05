@@ -112,7 +112,11 @@ bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	}
 
 	if (gpu->present_modes_size == 0) {
-		return true;
+		return false;
+	}
+
+	if (!gpu->features.geometryShader) {
+		return false;
 	}
 
 	if (!check_desired_extensions(gpu, GRAPHICS_DEVICE_EXTENSIONS, GRAPHICS_DEVICE_EXTENSIONS_SIZE)) {
@@ -139,6 +143,17 @@ bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	}
 
 	return graphics_index_found && present_index_found;
+}
+
+int rate_gpu(gpu_info *gpu) {
+	int score = 0;
+
+	if (gpu->props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+		score += 1000;
+	}
+	score += gpu->props.limits.maxImageDimension2D;
+
+	return score;
 }
 
 void free_gpu_info(gpu_info *gpu) {

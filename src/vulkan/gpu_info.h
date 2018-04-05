@@ -36,6 +36,7 @@ bool init_gpu_info_props(gpu_info *gpu, VkPhysicalDevice device, VkSurfaceKHR su
 bool check_desired_extensions(gpu_info *gpu, const char *const desired_extensions[], size_t desired_extensions_size);
 bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	uint32_t *graphics_index, uint32_t *present_index);
+int rate_gpu(gpu_info *gpu);
 void free_gpu_info(gpu_info *gpu);
 
 #endif // GPU_INFO_H

@@ -113,25 +113,30 @@ static bool enumerate_physical_devices(vk_context *ctx) {
 }
 
 static bool choose_suitable_graphics_gpu(vk_context *ctx) {
+	int maxScore = -1;
 	for (uint32_t i = 0; i < ctx->gpus_size; i++) {
 		if (is_gpu_suitable_for_graphics(&ctx->gpus[i], ctx->surface,
 			&ctx->graphics_family_index, &ctx->present_family_index)) 
 		{
-			log_info("Found suitable gpu");
-			ctx->selected_gpu = i;
-			return true;
+			int currentScore = rate_gpu(&ctx->gpus[i]);
+			log_info("Found suitable gpu, score: %d", currentScore);
+			if (currentScore > maxScore) {
+				ctx->selected_gpu = i;
+				maxScore = currentScore;
+			}
 		}
 	}
 
-	return false;
+	return maxScore != -1;
 }
 
 static bool create_device(vk_context *ctx) {
 	uint32_t indices[] = { ctx->graphics_family_index, ctx->present_family_index };
 	
 	VkDeviceQueueCreateInfo devq_info[2];
+	uint32_t queue_count = indices[0] == indices[1] ? 1 : 2;
 	const float priority = 1.0f;
-	for (uint32_t i = 0; i < 2; i++) {
+	for (uint32_t i = 0; i < queue_count; i++) {
 		VkDeviceQueueCreateInfo qinfo = {
 			.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 			.pNext            = NULL,
@@ -156,7 +161,7 @@ static bool create_device(vk_context *ctx) {
 		.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		.pNext                   = NULL,
 		.flags                   = 0,
-		.queueCreateInfoCount    = 2,
+		.queueCreateInfoCount    = queue_count,
 		.pQueueCreateInfos       = devq_info,
 		.enabledLayerCount       = 0,
 		.ppEnabledLayerNames     = NULL,
