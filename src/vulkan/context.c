@@ -2,10 +2,11 @@
 
 #include <SDL2/SDL_vulkan.h>
 #include <stdint.h>
+#include "../logger/logger.h"
+#include "../window/config.h"
+#include "../utils/heap.h"
 #include "./functions/functions.h"
 #include "./functions/function_loader.h"
-#include "../logger/logger.h"
-#include "../utils/heap.h"
 #include "./tools/tools.h"
 
 static void init_vk_context(vk_context *ctx) {
@@ -15,6 +16,7 @@ static void init_vk_context(vk_context *ctx) {
 	ctx->graphics_queue = VK_NULL_HANDLE;
 	ctx->present_queue = VK_NULL_HANDLE;
 	ctx->command_pool = VK_NULL_HANDLE;
+	ctx->swapchain = VK_NULL_HANDLE;
 	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
 		ctx->acquire_semaphores[i] = VK_NULL_HANDLE;
 		ctx->render_complete_semaphores[i] = VK_NULL_HANDLE;
@@ -242,6 +244,54 @@ static bool create_command_buffers(vk_context *ctx) {
 	return true;
 }
 
+static bool create_swapchain(vk_context *ctx) {
+	gpu_info *gpu = &ctx->gpus[ctx->selected_gpu];
+
+	VkSurfaceFormatKHR surface_format;
+	VkPresentModeKHR present_mode;
+	VkExtent2D extent, window_size = {
+		.width = window_config.width,
+		.height = window_config.height
+	};
+	bool found_sf = choose_surface_format(gpu, &surface_format);
+	bool found_pm = choose_present_mode(gpu, &present_mode);
+	bool found_ex = choose_extent(gpu, &extent, &window_size);
+
+	if (!(found_sf && found_pm && found_ex)) {
+		return false;
+	}
+
+	VkSharingMode sharing_mode = ctx->graphics_family_index == ctx->present_family_index ?
+		VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
+	uint32_t indices[] = { ctx->graphics_family_index, ctx->present_family_index };
+	uint32_t queue_count = ctx->graphics_family_index == ctx->present_family_index ? 0 : 2;
+
+	VkSwapchainCreateInfoKHR swapchain_info = {
+		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		.pNext = NULL,
+		.flags = 0,
+		.surface = ctx->surface,
+		.minImageCount = NUM_FRAME_DATA,
+		.imageFormat = surface_format.format,
+		.imageColorSpace = surface_format.colorSpace,
+		.imageExtent = extent,
+		.imageArrayLayers = 1,
+		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		.imageSharingMode = sharing_mode,
+		.queueFamilyIndexCount = queue_count,
+		.pQueueFamilyIndices = ctx->graphics_family_index == ctx->present_family_index ? NULL : indices,
+		.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		.presentMode = present_mode,
+		.clipped = VK_TRUE,
+		.oldSwapchain = ctx->swapchain
+	};
+
+	CHECK_VK(vk_CreateSwapchainKHR(ctx->device, &swapchain_info, NULL, &ctx->swapchain));
+
+	return true;
+}
+
 bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 	init_vk_context(ctx);
 	return init_vulkan_function_loader() &&
@@ -256,7 +306,8 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 		init_queues(ctx) &&
 		create_semaphores(ctx) &&
 		create_command_pool(ctx) && 
-		create_command_buffers(ctx);
+		create_command_buffers(ctx) &&
+		create_swapchain(ctx);
 }
 
 void shutdown_vulkan(vk_context *ctx) {

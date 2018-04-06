@@ -8,6 +8,7 @@
 #include "./logger/logger.h"
 #include "./vulkan/context.h"
 #include "./string/string.h"
+#include "./window/config.h"
 
 void quit(int rc);
 
@@ -45,7 +46,7 @@ int main(int argc, char* args[]) {
 	SDL_DisplayMode mode;
 	SDL_Window *window = NULL;
 
-	window = SDL_CreateWindow("Vulkan sample", 0, 0, 1920, 1080, 
+	window = SDL_CreateWindow("Vulkan sample", 0, 0, window_config.width, window_config.height, 
 		SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN);
 	SDL_GetCurrentDisplayMode(0, &mode);
     log_info("Screen BPP: %d", SDL_BITSPERPIXEL(mode.format));

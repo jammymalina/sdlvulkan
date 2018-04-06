@@ -161,7 +161,6 @@ bool choose_extent(gpu_info *gpu, VkExtent2D *result, VkExtent2D *window_size) {
 	}
 
 	return true;
-
 }
 
 bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
@@ -182,7 +181,7 @@ bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 		return false;
 	}
 
-	if (!(gpu->surface_caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+	if (!(gpu->surface_caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
 		return false;
 	}
 

@@ -28,6 +28,8 @@ typedef struct vk_context {
 	VkCommandPool command_pool;
 	VkCommandBuffer command_buffers[NUM_FRAME_DATA];
 	VkFence command_buffer_fences[NUM_FRAME_DATA];
+
+	VkSwapchainKHR swapchain;
 } vk_context;
 
 bool init_vulkan(vk_context *ctx, SDL_Window *window);
