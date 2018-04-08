@@ -2,5 +2,6 @@
 
 window_configuration window_config = {
 	.width = 1920,
-	.height = 1080
+	.height = 1080,
+	.fullscreen = true
 };

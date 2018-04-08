@@ -30,6 +30,17 @@ typedef struct vk_context {
 	VkFence command_buffer_fences[NUM_FRAME_DATA];
 
 	VkSwapchainKHR swapchain;
+	VkImage swapchain_images[NUM_FRAME_DATA];
+	VkImageView swapchain_views[NUM_FRAME_DATA];
+
+	VkSurfaceFormatKHR surface_format;
+	VkPresentModeKHR present_mode;
+	VkExtent2D extent;
+
+	VkFormat depth_format;
+	VkRenderPass render_pass;
+
+	VkFramebuffer framebuffers[NUM_FRAME_DATA];
 } vk_context;
 
 bool init_vulkan(vk_context *ctx, SDL_Window *window);

@@ -8,6 +8,7 @@
 #include "./functions/functions.h"
 #include "./functions/function_loader.h"
 #include "./tools/tools.h"
+#include "../renderer/config.h"
 
 static void init_vk_context(vk_context *ctx) {
 	ctx->instance = VK_NULL_HANDLE;
@@ -21,7 +22,11 @@ static void init_vk_context(vk_context *ctx) {
 		ctx->acquire_semaphores[i] = VK_NULL_HANDLE;
 		ctx->render_complete_semaphores[i] = VK_NULL_HANDLE;
 		ctx->command_buffer_fences[i] = VK_NULL_HANDLE;
+		ctx->swapchain_images[i] = VK_NULL_HANDLE;
+		ctx->swapchain_views[i] = VK_NULL_HANDLE;
+		ctx->framebuffers[i] = VK_NULL_HANDLE;
 	}
+	ctx->render_pass = VK_NULL_HANDLE;
 	ctx->gpus = NULL;
 	ctx->gpus_size = 0;
 }
@@ -267,27 +272,173 @@ static bool create_swapchain(vk_context *ctx) {
 	uint32_t queue_count = ctx->graphics_family_index == ctx->present_family_index ? 0 : 2;
 
 	VkSwapchainCreateInfoKHR swapchain_info = {
-		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		.pNext = NULL,
-		.flags = 0,
-		.surface = ctx->surface,
-		.minImageCount = NUM_FRAME_DATA,
-		.imageFormat = surface_format.format,
-		.imageColorSpace = surface_format.colorSpace,
-		.imageExtent = extent,
-		.imageArrayLayers = 1,
-		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		.imageSharingMode = sharing_mode,
+		.sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		.pNext                 = NULL,
+		.flags                 = 0,
+		.surface               = ctx->surface,
+		.minImageCount         = NUM_FRAME_DATA,
+		.imageFormat           = surface_format.format,
+		.imageColorSpace       = surface_format.colorSpace,
+		.imageExtent           = extent,
+		.imageArrayLayers      = 1,
+		.imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		.imageSharingMode      = sharing_mode,
 		.queueFamilyIndexCount = queue_count,
-		.pQueueFamilyIndices = ctx->graphics_family_index == ctx->present_family_index ? NULL : indices,
-		.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-		.presentMode = present_mode,
-		.clipped = VK_TRUE,
-		.oldSwapchain = ctx->swapchain
+		.pQueueFamilyIndices   = ctx->graphics_family_index == ctx->present_family_index ? NULL : indices,
+		.preTransform          = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+		.compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		.presentMode           = present_mode,
+		.clipped               = VK_TRUE,
+		.oldSwapchain          = ctx->swapchain
 	};
 
 	CHECK_VK(vk_CreateSwapchainKHR(ctx->device, &swapchain_info, NULL, &ctx->swapchain));
+
+	ctx->surface_format = surface_format;
+	ctx->present_mode = present_mode;
+	ctx->extent = extent;
+
+	return true;
+}
+
+static bool get_depth_format(vk_context *ctx) {
+	gpu_info *gpu = &ctx->gpus[ctx->selected_gpu];
+
+	VkFormat formats[] = {  
+		VK_FORMAT_D32_SFLOAT_S8_UINT, 
+		VK_FORMAT_D24_UNORM_S8_UINT 
+	};
+	// Make sure to check it supports optimal tiling and is a depth/stencil format.
+	bool success = choose_supported_format(gpu, &ctx->depth_format, formats, 2, VK_IMAGE_TILING_OPTIMAL,
+		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	if (!success) {
+		log_error("No suitable depth format");
+		return false;
+	}
+
+	return true;
+}
+
+static bool create_render_targets(vk_context *ctx) {
+	uint32_t num_images = 0;
+	CHECK_VK(vk_GetSwapchainImagesKHR(ctx->device, ctx->swapchain, &num_images, NULL));
+	CHECK_VK_VAL(num_images > 0, "No swapchain images");
+
+	CHECK_VK(vk_GetSwapchainImagesKHR(ctx->device, ctx->swapchain, &num_images, ctx->swapchain_images));
+	CHECK_VK_VAL(num_images > 0, "No swapchain images");
+
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		VkImageViewCreateInfo image_view_info = {
+			.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.pNext      = NULL,
+			.flags      = 0,
+			.image      = ctx->swapchain_images[i],
+			.viewType   = VK_IMAGE_VIEW_TYPE_2D,
+			.format     = ctx->surface_format.format,
+			.components = {
+				.r = VK_COMPONENT_SWIZZLE_R,
+				.g = VK_COMPONENT_SWIZZLE_G,
+				.b = VK_COMPONENT_SWIZZLE_B,
+				.a = VK_COMPONENT_SWIZZLE_A
+			},
+			.subresourceRange = {
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel   = 0,
+				.levelCount     = 1,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+		};
+
+		CHECK_VK(vk_CreateImageView(ctx->device, &image_view_info, NULL, &ctx->swapchain_views[i]));
+	}
+
+	return true;
+}
+
+static bool create_render_pass(vk_context *ctx) {
+	VkAttachmentDescription color_attachment = {
+		.flags          = 0,
+		.format         = ctx->surface_format.format,
+		.samples        = VK_SAMPLE_COUNT_1_BIT,
+		.loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp  = 0,
+		.stencilStoreOp = 0,
+		.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+		.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+	};
+
+	VkAttachmentDescription depth_attachment = {
+		.flags          = 0,
+		.format         = ctx->depth_format,
+		.samples        = VK_SAMPLE_COUNT_1_BIT,
+		.loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+		.stencilLoadOp  = 0,
+		.stencilStoreOp = 0,
+		.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+		.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+	};
+
+	VkAttachmentReference color_ref = {
+		.attachment = 0,
+		.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+	};
+
+	VkAttachmentReference depth_ref = {
+		.attachment = 1,
+		.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+	};
+
+	VkSubpassDescription subpass = {
+		.flags                   = 0,
+		.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		.inputAttachmentCount    = 0,
+		.pInputAttachments       = NULL,
+		.colorAttachmentCount    = 1,
+		.pColorAttachments       = &color_ref,
+		.pResolveAttachments     = NULL,
+		.pDepthStencilAttachment = &depth_ref,
+		.preserveAttachmentCount = 0,
+		.pPreserveAttachments    = NULL
+	};
+
+	VkAttachmentDescription attachments[] = { color_attachment, depth_attachment };
+
+	VkRenderPassCreateInfo render_pass_info = {
+		.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.pNext           = NULL,
+		.flags           = 0,
+		.attachmentCount = 2,
+		.pAttachments    = attachments,
+		.subpassCount    = 1,
+		.pSubpasses      = &subpass,
+		.dependencyCount = 0,
+		.pDependencies   = NULL
+	};
+
+	CHECK_VK(vk_CreateRenderPass(ctx->device, &render_pass_info, NULL, &ctx->render_pass));
+
+	return true;
+}
+
+static bool create_framebuffers(vk_context *ctx) {
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		VkImageView attachments[] = { ctx->swapchain_views[i], VK_NULL_HANDLE };
+		VkFramebufferCreateInfo framebuffer_info = {
+			.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.pNext           = NULL,
+			.flags           = 0,
+			.renderPass      = ctx->render_pass,
+			.attachmentCount = 2,
+			.pAttachments    = attachments,
+			.width           = render_config.width,
+			.height          = render_config.height,
+			.layers          = 1
+		};
+		CHECK_VK(vk_CreateFramebuffer(ctx->device, &framebuffer_info, NULL, &ctx->framebuffers[i]));
+	}
 
 	return true;
 }
@@ -307,10 +458,34 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 		create_semaphores(ctx) &&
 		create_command_pool(ctx) && 
 		create_command_buffers(ctx) &&
-		create_swapchain(ctx);
+		create_swapchain(ctx) &&
+		get_depth_format(ctx) &&
+		create_render_targets(ctx) &&
+		create_render_pass(ctx) &&
+		create_framebuffers(ctx);
 }
 
 void shutdown_vulkan(vk_context *ctx) {
+	if (vk_DestroyFramebuffer) {
+		for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+			if (ctx->framebuffers[i]) {
+				vk_DestroyFramebuffer(ctx->device, ctx->framebuffers[i], NULL);
+			}
+		}
+	}
+	if (vk_DestroyRenderPass && ctx->render_pass) {
+		vk_DestroyRenderPass(ctx->device, ctx->render_pass, NULL);
+	}
+	if (vk_DestroyImageView) {
+		for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+			if (ctx->swapchain_views[i]) {
+				vk_DestroyImageView(ctx->device, ctx->swapchain_views[i], NULL);
+			}
+		}
+	}
+	if (vk_DestroySwapchainKHR && ctx->swapchain) {
+		vk_DestroySwapchainKHR(ctx->device, ctx->swapchain, NULL);
+	}
 	if (vk_DestroyFence) {
 		for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
 			if (ctx->command_buffer_fences[i]) {

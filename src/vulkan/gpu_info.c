@@ -163,6 +163,29 @@ bool choose_extent(gpu_info *gpu, VkExtent2D *result, VkExtent2D *window_size) {
 	return true;
 }
 
+bool choose_supported_format(gpu_info *gpu, VkFormat *result, VkFormat *formats, size_t num_formats, VkImageTiling tiling,
+	VkFormatFeatureFlags features) 
+{
+	for (size_t i = 0; i < num_formats; i++) {
+		VkFormat format = formats[i];
+
+		VkFormatProperties props;
+		vk_GetPhysicalDeviceFormatProperties(gpu->device, format, &props);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+			*result = format;
+			return true;
+		} else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+			*result = format;
+			return true;
+		}
+	}
+
+	*result = VK_FORMAT_UNDEFINED;
+
+	return false;
+}
+
 bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
 	uint32_t *graphics_index, uint32_t *present_index) 
 {
