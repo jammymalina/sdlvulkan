@@ -7,12 +7,10 @@
 #include <vulkan/vulkan.h>
 #include "./logger/logger.h"
 #include "./vulkan/context.h"
-#include "./string/string.h"
 #include "./window/config.h"
+#include "./renderer/config.h"
 
 void quit(int rc);
-
-vk_context vk_ctx;
 
 bool init_SDL() {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -33,12 +31,14 @@ void shutdown_SDL() {
 }
 
 void quit(int rc) {
-    shutdown_vulkan(&vk_ctx); 
+    shutdown_vulkan(&context); 
 	shutdown_SDL();  
     exit(rc);
 }
 
 int main(int argc, char* args[]) {
+	init_vk_context(&context);
+
 	if (!init_SDL()) {
 		quit(EXIT_FAILURE);
 	}
@@ -46,15 +46,29 @@ int main(int argc, char* args[]) {
 	SDL_DisplayMode mode;
 	SDL_Window *window = NULL;
 
-	window = SDL_CreateWindow("Vulkan sample", 0, 0, window_config.width, window_config.height, 
-		SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN);
-	SDL_GetCurrentDisplayMode(0, &mode);
-    log_info("Screen BPP: %d", SDL_BITSPERPIXEL(mode.format));
-	int dw, dh;
-	SDL_Vulkan_GetDrawableSize(window, &dw, &dh);
-	log_info("Draw Size: %d, %d", dw, dh);
+	if (window_config.fullscreen) {
+		window = SDL_CreateWindow("Vulkan sample", 0, 0, 0, 0, 
+			SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN);
+		SDL_GetWindowSize(window, &window_config.width, &window_config.height);
+	} else {
+		window = SDL_CreateWindow(
+			"Vulkan sample", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_config.width, window_config.height, 
+			SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
+		);
+	}
 
-	if (!init_vulkan(&vk_ctx, window)) {
+	if (!window) {
+		log_error("Unable to create window");
+		quit(EXIT_FAILURE);
+	}
+
+	SDL_GetCurrentDisplayMode(0, &mode);
+	SDL_Vulkan_GetDrawableSize(window, &render_config.width, &render_config.height);
+	log_info("Window size: %d %d", window_config.width, window_config.height);
+	log_info("Draw Size: %d, %d", render_config.width, render_config.height);
+    log_info("Screen BPP: %d", SDL_BITSPERPIXEL(mode.format));
+
+	if (!init_vulkan(&context, window)) {
 		quit(EXIT_FAILURE);
 	}
 

@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 typedef struct window_configuration {
-	uint32_t width;
-	uint32_t height;
+	int width;
+	int height;
 	bool fullscreen;
 } window_configuration;
 

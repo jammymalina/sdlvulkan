@@ -43,6 +43,9 @@ typedef struct vk_context {
 	VkFramebuffer framebuffers[NUM_FRAME_DATA];
 } vk_context;
 
+extern vk_context context;
+
+void init_vk_context(vk_context *ctx);
 bool init_vulkan(vk_context *ctx, SDL_Window *window);
 void shutdown_vulkan(vk_context *ctx);
 

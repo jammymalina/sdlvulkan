@@ -68,6 +68,16 @@ typedef struct vk_allocator {
 	vk_allocation garbage[NUM_FRAME_DATA];
 } vk_allocator;
 
+static inline bool is_host_visible(vk_memory_usage_type t) {
+	return t != VULKAN_MEMORY_USAGE_GPU_ONLY;
+}
+
 void init_vk_allocation(vk_allocation *a);
+
+bool init_vk_block(vk_block *block);
+bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceSize granularity, 
+	vk_allocation_type alloc_type, vk_allocation *allocation);
+void destroy_vk_block(vk_block *block);
+
 
 #endif // VULKAN_MEMORY_H

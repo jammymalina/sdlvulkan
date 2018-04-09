@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 typedef struct renderer_configuration {
-	uint32_t width;
-	uint32_t height;
+	int width;
+	int height;
 } renderer_configuration;
 
 extern renderer_configuration render_config;

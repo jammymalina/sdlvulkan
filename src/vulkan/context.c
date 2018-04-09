@@ -10,7 +10,9 @@
 #include "./tools/tools.h"
 #include "../renderer/config.h"
 
-static void init_vk_context(vk_context *ctx) {
+vk_context context;
+
+void init_vk_context(vk_context *ctx) {
 	ctx->instance = VK_NULL_HANDLE;
 	ctx->surface = VK_NULL_HANDLE;
 	ctx->device = VK_NULL_HANDLE;
