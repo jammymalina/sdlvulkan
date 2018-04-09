@@ -2,7 +2,7 @@
 #define BASIC_DYNAMIC_LIST_H
 
 #include <stddef.h>
-#include "./utils/heap.h"
+#include <stdbool.h>
 
 #define GENERATE_BASIC_DYNAMIC_LIST_HEADER(name, function_prefix, type)                    \
     typedef struct {                                                                       \
@@ -50,14 +50,14 @@
     }                                                                                      \
                                                                                            \
     bool function_prefix##_get(name *c, size_t index, type *value) {                       \
-        if (index >= c->max_size)                                                          \
+        if (index >= c->size)                                                          \
             return false;                                                                  \
         *value = c->elements[index];                                                       \
         return true;                                                                       \
     }                                                                                      \
                                                                                            \
     bool function_prefix##_remove(name *c, size_t index) {                                 \
-        if (index >= c->max_size)                                                          \
+        if (index >= c->size)                                                          \
             return false;                                                                  \
         for (size_t i = index; i < c->size - 1; i++) {                                     \
             c->elements[i] = c->elements[i + 1];                                           \
@@ -67,7 +67,7 @@
     }                                                                                      \
                                                                                            \
     bool function_prefix##_set(name *c, size_t index, type element) {                      \
-        if (index >= c->max_size)                                                          \
+        if (index >= c->size)                                                          \
             return false;                                                                  \
         c->elements[index] = element;                                                      \
         return true;                                                                       \

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "./gpu_info.h"
-#include "./render_config.h"
+#include "./config.h"
 
 typedef struct vk_context {
 	VkInstance instance;

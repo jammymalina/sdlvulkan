@@ -1,6 +1,6 @@
 #ifndef COLLECTIONS_COMMON_H
 #define COLLECTIONS_COMMON_H
 
-typedef void (*free_func)(void*);
+#include "../utils/heap.h"
 
 #endif // COLLECTIONS_COMMON_H

@@ -2,6 +2,7 @@
 #define BASIC_LIST_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #define GENERATE_BASIC_LIST_HEADER(name, function_prefix, type, max_size)           \
     typedef struct {                                                                \
@@ -36,14 +37,14 @@
     }                                                                               \
                                                                                     \
     bool function_prefix##_get(name *c, size_t index, type *value) {                \
-        if (index >= max_size)                                                      \
+        if (index >= size)                                                      \
             return false;                                                           \
         *value = c->elements[index];                                                \
         return true;                                                                \
     }                                                                               \
                                                                                     \
     bool function_prefix##_remove(name *c, size_t index) {                          \
-        if (index >= max_size)                                                      \
+        if (index >= size)                                                      \
             return false;                                                           \
         for (size_t i = index; i < c->size - 1; i++) {                              \
             c->elements[i] = c->elements[i + 1];                                    \
@@ -53,7 +54,7 @@
     }                                                                               \
                                                                                     \
     bool function_prefix##_set(name *c, size_t index, type element) {               \
-        if (index >= max_size)                                                      \
+        if (index >= size)                                                      \
             return false;                                                           \
         c->elements[index] = element;                                               \
         return true;                                                                \
