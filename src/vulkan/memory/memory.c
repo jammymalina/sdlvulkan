@@ -373,14 +373,10 @@ void empty_garbage_vk_allocator(vk_mem_allocator *allocator) {
 
 void destroy_vk_allocator(vk_mem_allocator *allocator) {
 	for (size_t i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
-		if (allocator->blocks[i].size > 0) {
-			mem_free(allocator->blocks[i]);
-		}
+		destroy_vk_block_list(&allocator->blocks[i]);
 	}
 
 	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-		if (!init_vk_alloc_list(&allocator->garbage[i], vk_mem_config.max_garbage_allocations_size)) {
-			return false;
-		}
+		destroy_vk_alloc_list(&allocator->garbage[i]);
 	}
 }
