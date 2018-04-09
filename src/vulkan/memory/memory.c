@@ -339,7 +339,25 @@ bool init_vk_allocator(vk_mem_allocator *allocator) {
 	allocator->buffer_image_granularity = gpu->props.limits.bufferImageGranularity;
 
 	for (size_t i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
+		allocator->blocks[i].elements = NULL;
+		allocator->blocks[i].max_size = 0;
+		allocator->blocks[i].size = 0;
+	}
+
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		allocator->garbage[i].elements = NULL;
+		allocator->garbage[i].max_size = 0;
+		allocator->garbage[i].size = 0;
+	}	
+
+	for (size_t i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
 		if (!init_vk_block_list(&allocator->blocks[i], vk_mem_config.max_block_count_per_memory_type)) {
+			return false;
+		}
+	}
+
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		if (!init_vk_alloc_list(&allocator->garbage[i], vk_mem_config.max_garbage_allocations_size)) {
 			return false;
 		}
 	}
@@ -351,4 +369,18 @@ void empty_garbage_vk_allocator(vk_mem_allocator *allocator) {
 	allocator->garbage_index = (allocator->garbage_index + 1) % NUM_FRAME_DATA;
 
 
+}
+
+void destroy_vk_allocator(vk_mem_allocator *allocator) {
+	for (size_t i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
+		if (allocator->blocks[i].size > 0) {
+			mem_free(allocator->blocks[i]);
+		}
+	}
+
+	for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+		if (!init_vk_alloc_list(&allocator->garbage[i], vk_mem_config.max_garbage_allocations_size)) {
+			return false;
+		}
+	}
 }
