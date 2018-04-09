@@ -18,4 +18,9 @@
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, message "\n", ##__VA_ARGS__); \
 	} while (0)
 
+#define log_warning(message, ...)                                                \
+	do {                                                                         \
+		SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, message "\n", ##__VA_ARGS__);  \
+	} while (0)
+
 #endif // LOGGER_H

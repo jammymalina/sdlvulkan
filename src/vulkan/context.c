@@ -116,7 +116,7 @@ static bool enumerate_physical_devices(vk_context *ctx) {
 		init_gpu_info(&ctx->gpus[i]);
 		bool ret = init_gpu_info_props(&ctx->gpus[i], physical_devices[i], ctx->surface);
 		if (!ret) {
-			log_error("Could not init gpu %lu properties", i);
+			log_error("Could not init gpu %zu properties", i);
 			return false;
 		}
 	}

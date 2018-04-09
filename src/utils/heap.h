@@ -13,7 +13,7 @@
 		}                                          \
 	} while (0)
 
-
+#define ALIGN(x, a) (((x) + ((a) - 1) ) & ~((a) - 1))
 
 void *mem_alloc(size_t size);
 void mem_free(void *data);

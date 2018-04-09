@@ -3,9 +3,9 @@
 
 #include <vulkan/vulkan.h>
 #include <stdint.h>
-#include "./config.h"
-#include "../collections/basic_dynamic_list.h"
-#include "../collections/common.h"
+#include "../config.h"
+#include "../../collections/basic_dynamic_list.h"
+#include "../../collections/common.h"
 
 typedef unsigned char byte;
 
@@ -48,9 +48,8 @@ typedef struct vk_block {
 } vk_block;
 
 typedef struct vk_allocation {
+	uint32_t id;
 	vk_block *block;
-	uint32_t pool_id;
-	uint32_t block_id;
 	VkDeviceMemory device_memory;
 	VkDeviceSize offset;
 	VkDeviceSize size;
@@ -58,26 +57,37 @@ typedef struct vk_allocation {
 } vk_allocation;
 
 GENERATE_BASIC_DYNAMIC_LIST_HEADER(vk_block_list, vk_block_list, vk_block*)
+GENERATE_BASIC_DYNAMIC_LIST_HEADER(vk_alloc_list, vk_alloc_list, vk_allocation)
 
-typedef struct vk_allocator {
+typedef struct vk_mem_allocator {
 	int garbage_index;
 	int device_local_memory_bytes;
 	int host_visible_memory_bytes;
 	VkDeviceSize buffer_image_granularity;
 	vk_block_list blocks[VK_MAX_MEMORY_TYPES];
-	vk_allocation garbage[NUM_FRAME_DATA];
-} vk_allocator;
+	vk_alloc_list garbage[NUM_FRAME_DATA];
+} vk_mem_allocator;
 
 static inline bool is_host_visible(vk_memory_usage_type t) {
 	return t != VULKAN_MEMORY_USAGE_GPU_ONLY;
 }
 
+// ALLOCATION
+
 void init_vk_allocation(vk_allocation *a);
 
-bool init_vk_block(vk_block *block);
+// BLOCK
+
+void init_vk_block(vk_block *block, uint32_t memory_type_index, VkDeviceSize size, vk_memory_usage_type usage);
+bool init_vk_block_memory(vk_block *block);
 bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceSize granularity, 
 	vk_allocation_type alloc_type, vk_allocation *allocation);
+void free_allocation_vk_block(vk_block *block, vk_allocation *allocation);
 void destroy_vk_block(vk_block *block);
+void print_vk_block(vk_block *block);
 
+// ALLOCATOR
+
+extern vk_mem_allocator vk_allocator;
 
 #endif // VULKAN_MEMORY_H
