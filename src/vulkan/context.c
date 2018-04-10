@@ -9,6 +9,7 @@
 #include "./functions/function_loader.h"
 #include "./tools/tools.h"
 #include "../renderer/config.h"
+#include "./memory/memory.h"
 
 vk_context context;
 
@@ -456,6 +457,7 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 		choose_suitable_graphics_gpu(ctx) &&
 		create_device(ctx) &&
 		load_device_level_functions(ctx->device) &&
+		init_vk_allocator(&vk_allocator) &&
 		init_queues(ctx) &&
 		create_semaphores(ctx) &&
 		create_command_pool(ctx) && 
@@ -468,6 +470,7 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 }
 
 void shutdown_vulkan(vk_context *ctx) {
+	destroy_vk_allocator(&vk_allocator);
 	if (vk_DestroyFramebuffer) {
 		for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
 			if (ctx->framebuffers[i]) {

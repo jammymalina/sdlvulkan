@@ -9,6 +9,7 @@
 #include "./vulkan/context.h"
 #include "./window/config.h"
 #include "./renderer/config.h"
+#include "./vulkan/memory/memory.h"
 
 void quit(int rc);
 
