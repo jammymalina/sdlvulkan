@@ -89,7 +89,7 @@ void print_vk_block(vk_block *block);
 // ALLOCATOR
 
 bool init_vk_allocator(vk_mem_allocator *allocator);
-bool vk_allocate(vk_mem_allocator *allocator, vk_allocation *result, 
+bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result, 
 	uint32_t size, uint32_t align, uint32_t memory_type_bits, 
 	vk_memory_usage_type usage, vk_allocation_type alloc_type);
 void empty_garbage_vk_allocator(vk_mem_allocator *allocator);
@@ -98,5 +98,9 @@ void destroy_vk_allocator(vk_mem_allocator *allocator);
 void print_vk_allocator(vk_mem_allocator *allocator);
 
 extern vk_mem_allocator vk_allocator;
+bool vk_allocate(vk_allocation *result, uint32_t size, uint32_t align, uint32_t memory_type_bits, 
+	vk_memory_usage_type usage, vk_allocation_type alloc_type);
+void vk_empty_garbage();
+bool vk_free_allocation(vk_allocation *allocation);
 
 #endif // VULKAN_MEMORY_H

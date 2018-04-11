@@ -437,7 +437,7 @@ static uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usag
 	return max_score == -1 ? UINT32_MAX : best_fit;
 }
 
-bool vk_allocate(vk_mem_allocator *allocator, vk_allocation *result, 
+bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result, 
 	uint32_t size, uint32_t align, uint32_t memory_type_bits, 
 	vk_memory_usage_type usage, vk_allocation_type alloc_type) 
 {
@@ -514,7 +514,7 @@ void empty_garbage_vk_allocator(vk_mem_allocator *allocator) {
 bool free_allocation_vk_allocator(vk_mem_allocator *allocator, vk_allocation *allocation) {
 	bool result = add_vk_alloc_list(&allocator->garbage[allocator->garbage_index], *allocation);
 	if (!result) {
-		log_warning("Could not add allocation to the garbage, list is full!");
+		log_error("Could not add allocation to the garbage, list is full!");
 	}
 	return result;
 }
@@ -548,4 +548,18 @@ void print_vk_allocator(vk_mem_allocator *allocator) {
 			print_vk_block(blocks->elements[j]);
 		}
 	}
+}
+
+bool vk_allocate(vk_allocation *result,  uint32_t size, uint32_t align, uint32_t memory_type_bits, 
+	vk_memory_usage_type usage, vk_allocation_type alloc_type) 
+{
+	return allocate_vk_allocator(&vk_allocator, result, size, align, memory_type_bits, usage, alloc_type);
+}
+
+void vk_empty_garbage() {
+	empty_garbage_vk_allocator(&vk_allocator);
+}
+
+bool vk_free_allocation(vk_allocation *allocation) {
+	return free_allocation_vk_allocator(&vk_allocator, allocation);
 }
