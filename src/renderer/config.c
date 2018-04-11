@@ -1,6 +1,6 @@
 #include "./config.h"
 
 renderer_configuration render_config = {
-	.width = 1920,
-	.height = 1080
+    .width = 1920,
+    .height = 1080
 };

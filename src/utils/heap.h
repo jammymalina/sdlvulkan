@@ -5,13 +5,13 @@
 #include "../logger/logger.h"
 
 #define CHECK_ALLOC(x, s)                          \
-	do {                                           \
-		if ((x) == NULL) {                         \
-			SDL_OutOfMemory();                     \
-			log_error("%s: %s", s, #x " == NULL"); \
-			return false;                          \
-		}                                          \
-	} while (0)
+    do {                                           \
+        if ((x) == NULL) {                         \
+            SDL_OutOfMemory();                     \
+            log_error("%s: %s", s, #x " == NULL"); \
+            return false;                          \
+        }                                          \
+    } while (0)
 
 #define ALIGN(x, a) (((x) + ((a) - 1) ) & ~((a) - 1))
 
