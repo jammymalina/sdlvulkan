@@ -32,6 +32,7 @@ void init_vk_context(vk_context *ctx) {
     ctx->render_pass = VK_NULL_HANDLE;
     ctx->gpus = NULL;
     ctx->gpus_size = 0;
+    ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;    
 }
 
 static bool create_instance(vk_context *ctx, SDL_Window *window) {
@@ -78,6 +79,8 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
         log_error("Could not create Vulkan instance: %s", vulkan_result_to_string(result));
         return false;
     }
+
+    mem_free(extensions);
 
     return true;
 }
@@ -350,13 +353,36 @@ static bool create_render_targets(vk_context *ctx) {
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
                 .layerCount     = 1
-            },
+            }
         };
 
         CHECK_VK(vk_CreateImageView(ctx->device, &image_view_info, NULL, &ctx->swapchain_views[i]));
     }
 
-    return true;
+    gpu_info *gpu = &ctx->gpus[ctx->selected_gpu]; 
+    VkImageFormatProperties fmt_props = {};
+    vk_GetPhysicalDeviceImageFormatProperties(gpu->device, ctx->surface_format.format, 
+        VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &fmt_props);   
+
+    if (render_config.desired_sample_count >= 16 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_16_BIT)) {
+        ctx->sample_count = VK_SAMPLE_COUNT_16_BIT;
+    } else if (render_config.desired_sample_count >= 8 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_8_BIT)) {
+        ctx->sample_count = VK_SAMPLE_COUNT_8_BIT;
+    } else if (render_config.desired_sample_count >= 4 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_4_BIT)) {
+        ctx->sample_count = VK_SAMPLE_COUNT_4_BIT;
+    } else if (render_config.desired_sample_count >= 2 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_2_BIT)) {
+        ctx->sample_count = VK_SAMPLE_COUNT_2_BIT;
+    }
+    
+    init_image(&ctx->depth_image);
+    ctx->depth_image.props.format = FMT_DEPTH;
+    ctx->depth_image.props.width = render_config.width;
+    ctx->depth_image.props.height = render_config.height;
+    ctx->depth_image.props.num_levels = 1;
+    ctx->depth_image.props.samples = (texture_samples) ctx->sample_count;
+    ctx->depth_image.props.repeat = TR_CLAMP;
+
+    return alloc_image(&ctx->depth_image);
 }
 
 static bool create_render_pass(vk_context *ctx) {
@@ -481,6 +507,7 @@ void shutdown_vulkan(vk_context *ctx) {
     if (vk_DestroyRenderPass && ctx->render_pass) {
         vk_DestroyRenderPass(ctx->device, ctx->render_pass, NULL);
     }
+    destroy_image(&ctx->depth_image);
     if (vk_DestroyImageView) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->swapchain_views[i]) {

@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include "./gpu_info.h"
 #include "./config.h"
+#include "./image.h"
 
 typedef struct vk_context {
     VkInstance instance;
@@ -32,6 +33,9 @@ typedef struct vk_context {
     VkSwapchainKHR swapchain;
     VkImage swapchain_images[NUM_FRAME_DATA];
     VkImageView swapchain_views[NUM_FRAME_DATA];
+    VkSampleCountFlagBits sample_count;
+
+    vk_image depth_image;
 
     VkSurfaceFormatKHR surface_format;
     VkPresentModeKHR present_mode;

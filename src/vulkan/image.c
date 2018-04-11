@@ -1,7 +1,11 @@
 #include "./image.h"
+
+#include "./functions/functions.h"
+#include "../logger/logger.h"
+#include "./tools/tools.h"
 #include "./context.h"
 
-VkFormat texture_format_to_vk_format(texture_format format) {
+static inline VkFormat texture_format_to_vk_format(texture_format format) {
     switch (format) {
         case FMT_RGBA8: 
             return VK_FORMAT_R8G8B8A8_UNORM;
@@ -33,7 +37,7 @@ VkFormat texture_format_to_vk_format(texture_format format) {
 }
 
 
-static VkComponentMapping texture_format_to_component_mapping(texture_format format) {
+static inline VkComponentMapping texture_format_to_component_mapping(texture_format format) {
     VkComponentMapping component_mapping = {
         .r = VK_COMPONENT_SWIZZLE_ZERO,
         .g = VK_COMPONENT_SWIZZLE_ZERO,
@@ -75,4 +79,194 @@ static VkComponentMapping texture_format_to_component_mapping(texture_format for
     }
 
     return component_mapping;
+}
+
+void init_image_props(vk_image_props *props) {
+    props->format = FMT_NONE;
+    props->samples = SAMPLE_1;
+    props->width = 0;
+    props->height = 0;
+    props->num_levels = 0;
+    props->type = TT_2D;
+    props->gamma_mips = false;
+    props->filter = TF_DEFAULT;
+    props->repeat = TR_REPEAT;
+}
+
+void init_image(vk_image *image) {
+    image->is_swapchain_image = false;
+    image->internal_format = VK_FORMAT_UNDEFINED;
+    image->image = VK_NULL_HANDLE;
+    image->view = VK_NULL_HANDLE;
+    image->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image->sampler = VK_NULL_HANDLE;
+    init_image_props(&image->props);
+}
+
+void create_from_swapchain_image(vk_image *result, VkImage image, VkImageView image_view, VkFormat format,
+    VkExtent2D *extent) 
+{
+    result->image = image;
+    result->view = image_view;
+    result->internal_format = format;
+
+    result->props.type = TT_2D;
+    result->props.format = FMT_RGBA8;
+    result->props.num_levels = 1;
+    result->props.width = extent->width;
+    result->props.height = extent->height;
+
+    result->is_swapchain_image = true;
+}
+
+static bool create_vk_sampler(vk_image *image) {
+    VkSamplerCreateInfo sampler_info = {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .mipLodBias = 0,
+        .anisotropyEnable = VK_FALSE,
+        .maxAnisotropy = 1.0,
+        .compareEnable = image->props.format == FMT_DEPTH,
+        .compareOp = image->props.format == FMT_DEPTH ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_NEVER,
+        .minLod = 0,
+        .maxLod = 0,
+        .borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .unnormalizedCoordinates = VK_FALSE
+    };
+
+    switch (image->props.filter) {
+        case TF_DEFAULT:
+        case TF_LINEAR:
+            sampler_info.minFilter = VK_FILTER_LINEAR;
+            sampler_info.magFilter = VK_FILTER_LINEAR;
+            sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            break;
+        case TF_NEAREST:
+            sampler_info.minFilter = VK_FILTER_NEAREST;
+            sampler_info.magFilter = VK_FILTER_NEAREST;
+            sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+            break;
+    }
+
+    switch (image->props.repeat) {
+        case TR_REPEAT:
+            sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            break;
+        case TR_CLAMP:
+            sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            break;
+        case TR_CLAMP_TO_ZERO_ALPHA:
+            sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+            sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            break;
+        case TR_CLAMP_TO_ZERO:
+            sampler_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+            sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            break;
+    }
+
+    CHECK_VK(vk_CreateSampler(context.device, &sampler_info, NULL, &image->sampler));
+
+    return true;
+}
+
+bool alloc_image(vk_image *image) {
+    destroy_image(image);
+
+    image->internal_format = texture_format_to_vk_format(image->props.format);
+
+    if (!create_vk_sampler(image)) {
+        log_error("Unable to create sampler");
+        return false;
+    }
+
+    VkImageUsageFlags usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (image->props.format == FMT_DEPTH) {
+        usage_flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    } else {
+        usage_flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+
+    VkImageCreateInfo image_info = {
+        .sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .pNext     = NULL,
+        .flags     = image->props.type == TT_CUBIC ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format    = image->internal_format,
+        .extent    = {
+            .width  = image->props.width,
+            .height = image->props.height,
+            .depth  = 1
+        },
+        .mipLevels             = image->props.num_levels,
+        .arrayLayers           = image->props.type == TT_CUBIC ? 6 : 1,
+        .samples               = (VkSampleCountFlagBits) image->props.samples,
+        .tiling                = VK_IMAGE_TILING_OPTIMAL,
+        .usage                 = usage_flags,
+        .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices   = NULL,
+        .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+    };
+
+    CHECK_VK(vk_CreateImage(context.device, &image_info, NULL, &image->image));
+
+    VkMemoryRequirements memory_requirements;
+    vk_GetImageMemoryRequirements(context.device, image->image, &memory_requirements);
+
+    bool success = vk_allocate(&image->allocation, memory_requirements.size, memory_requirements.alignment,
+        memory_requirements.memoryTypeBits, VULKAN_MEMORY_USAGE_GPU_ONLY, VULKAN_ALLOCATION_TYPE_IMAGE_OPTIMAL);
+    if (!success) {
+        log_error("Unable to allocate image");
+        return false;
+    }
+
+    CHECK_VK(vk_BindImageMemory(context.device, image->image, image->allocation.device_memory,
+        image->allocation.offset));
+    
+    VkImageViewCreateInfo view_info = {
+        .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .pNext      = NULL,
+        .flags      = 0,
+        .image      = image->image,
+        .viewType   = VK_IMAGE_VIEW_TYPE_2D,
+        .format     = image->props.type == TT_CUBIC ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
+        .components = texture_format_to_component_mapping(image->props.format),
+        .subresourceRange = {
+            .aspectMask     = image->props.format == FMT_DEPTH ? 
+                VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel   = 0,
+            .levelCount     = image->props.num_levels,
+            .baseArrayLayer = 0,
+            .layerCount     = image->props.type == TT_CUBIC ? 6 : 1
+        }
+    };
+
+    CHECK_VK(vk_CreateImageView(context.device, &view_info, NULL, &image->view));
+
+    return true;
+}
+
+void destroy_image(vk_image *image) {
+    if (image->is_swapchain_image) {
+        return;
+    }
+    if (image->image) {
+        vk_DestroyImage(context.device, image->image, NULL);
+    }
+    if (image->view) {
+        vk_DestroyImageView(context.device, image->view, NULL);
+    }
+    if (image->sampler) {
+        vk_DestroySampler(context.device, image->sampler, NULL);
+    }
 }

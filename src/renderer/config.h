@@ -6,6 +6,7 @@
 typedef struct renderer_configuration {
     int width;
     int height;
+    int desired_sample_count;
 } renderer_configuration;
 
 extern renderer_configuration render_config;

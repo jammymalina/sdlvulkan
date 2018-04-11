@@ -51,6 +51,7 @@ void init_vk_allocation(vk_allocation *a) {
 // BLOCK
 
 void init_vk_block(vk_block *block, uint32_t memory_type_index, VkDeviceSize size, vk_memory_usage_type usage) {
+    block->head = NULL;
     block->next_block_id = 0;
     block->size = size;
     block->allocated = 0;
@@ -81,13 +82,14 @@ bool init_vk_block_memory(vk_block *block) {
         CHECK_VK(vk_MapMemory(context.device, block->device_memory, 0, block->size, 0, (void**) &block->data));
     }
 
-    block->head = mem_alloc(sizeof(vk_chunk*));
+    block->head = mem_alloc(sizeof(vk_chunk));
     CHECK_ALLOC(block->head, "Allocation fail");
 
     block->head->id = block->next_block_id++;
     block->head->size = block->size;
     block->head->offset = 0;
     block->head->prev = NULL;
+    block->head->next = NULL;
     block->head->type = VULKAN_ALLOCATION_TYPE_FREE;
 
     return true;
@@ -199,7 +201,7 @@ bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceS
     }
 
     if (best_fit->size > size) {
-        vk_chunk *chunk = mem_alloc(sizeof(vk_chunk*));
+        vk_chunk *chunk = mem_alloc(sizeof(vk_chunk));
         CHECK_ALLOC(chunk, "Allocation fail");
 
         vk_chunk *next = best_fit->next;
@@ -465,7 +467,7 @@ bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result,
     VkDeviceSize block_size = usage == VULKAN_MEMORY_USAGE_GPU_ONLY ?
         allocator->device_local_memory_bytes : allocator->host_visible_memory_bytes;
         
-    vk_block *block = mem_alloc(sizeof(vk_block*));
+    vk_block *block = mem_alloc(sizeof(vk_block));
     CHECK_ALLOC(block, "Block allocation failed");
     init_vk_block(block, memory_type_index, block_size, usage);
 
