@@ -386,7 +386,7 @@ int count_set_bits(uint32_t n) {
     return count;
 }
 
-static uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usage_type usage) {
+uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usage_type usage) {
     gpu_info *gpu = &context.gpus[context.selected_gpu];
     VkPhysicalDeviceMemoryProperties *mem_props = &gpu->mem_props;
 

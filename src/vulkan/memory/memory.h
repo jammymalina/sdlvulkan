@@ -76,6 +76,8 @@ static inline bool is_host_visible(vk_memory_usage_type t) {
 
 void init_vk_allocation(vk_allocation *a);
 
+uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usage_type usage);
+
 // BLOCK
 
 void init_vk_block(vk_block *block, uint32_t memory_type_index, VkDeviceSize size, vk_memory_usage_type usage);

@@ -9,6 +9,7 @@ typedef struct renderer_configuration {
     int host_visible_memory_MB;
     size_t max_block_count_per_memory_type;
     size_t max_garbage_allocations_size;
+    size_t upload_buffer_size_MB;
 } vulkan_memory_configuration;
 
 extern vulkan_memory_configuration vk_mem_config;
