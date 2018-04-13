@@ -552,6 +552,10 @@ void print_vk_allocator(vk_mem_allocator *allocator) {
     }
 }
 
+bool vk_init_allocator() {
+    return init_vk_allocator(&vk_allocator);
+}
+
 bool vk_allocate(vk_allocation *result,  uint32_t size, uint32_t align, uint32_t memory_type_bits, 
     vk_memory_usage_type usage, vk_allocation_type alloc_type) 
 {
@@ -564,4 +568,8 @@ void vk_empty_garbage() {
 
 bool vk_free_allocation(vk_allocation *allocation) {
     return free_allocation_vk_allocator(&vk_allocator, allocation);
+}
+
+void vk_destroy_allocator() {
+    destroy_vk_allocator(&vk_allocator);
 }

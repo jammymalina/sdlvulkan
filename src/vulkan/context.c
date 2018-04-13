@@ -488,7 +488,7 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
         create_semaphores(ctx) &&
         create_command_pool(ctx) && 
         create_command_buffers(ctx) &&
-        init_vk_allocator(&vk_allocator) &&
+        vk_init_allocator() &&
         vk_init_stage_manager() &&
         create_swapchain(ctx) &&
         get_depth_format(ctx) &&
@@ -499,7 +499,7 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
 
 void shutdown_vulkan(vk_context *ctx) {
     vk_destroy_stage_manager();
-    destroy_vk_allocator(&vk_allocator);
+    vk_destroy_allocator();
     if (vk_DestroyFramebuffer) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->framebuffers[i]) {
