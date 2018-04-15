@@ -38,6 +38,8 @@ void quit(int rc) {
 }
 
 int main(int argc, char* args[]) {
+    log_info("Binary path: %s", args[0]);
+    
     init_vk_context(&context);
 
     if (!init_SDL()) {
