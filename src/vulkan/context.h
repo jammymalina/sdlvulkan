@@ -26,6 +26,8 @@ typedef struct vk_context {
     VkSemaphore acquire_semaphores[NUM_FRAME_DATA];
     VkSemaphore render_complete_semaphores[NUM_FRAME_DATA];
 
+    VkQueryPool query_pools[NUM_FRAME_DATA];
+
     VkCommandPool command_pool;
     VkCommandBuffer command_buffers[NUM_FRAME_DATA];
     VkFence command_buffer_fences[NUM_FRAME_DATA];

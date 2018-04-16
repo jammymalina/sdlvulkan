@@ -5,17 +5,17 @@
 #include <vulkan/vulkan.h>
 #include "./memory/memory.h"
 #include "./config.h"
-#include "./material.h"
+#include "../renderer/materials/material.h"
 
 typedef struct vk_image_props {
     texture_type type;
     texture_format format;
     texture_samples samples;
-    texture_filter filter; 
+    texture_filter filter;
     texture_repeat repeat;
-    int width;
-    int height;
-    int num_levels;
+    size_t width;
+    size_t height;
+    size_t num_levels;
     bool gamma_mips;
 } vk_image_props;
 
@@ -38,6 +38,8 @@ void init_image(vk_image *image);
 void create_from_swapchain_image(vk_image *result, VkImage image, VkImageView image_view, VkFormat format,
     VkExtent2D *extent);
 bool alloc_image(vk_image *image);
+bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, size_t z,
+    size_t width, size_t height, void *picture, size_t pixel_pitch);
 void destroy_image(vk_image *image);
 
 #endif // VULKAN_IMAGE_H

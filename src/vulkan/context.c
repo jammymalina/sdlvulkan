@@ -29,11 +29,12 @@ void init_vk_context(vk_context *ctx) {
         ctx->swapchain_images[i] = VK_NULL_HANDLE;
         ctx->swapchain_views[i] = VK_NULL_HANDLE;
         ctx->framebuffers[i] = VK_NULL_HANDLE;
+        ctx->query_pools[i] = VK_NULL_HANDLE;
     }
     ctx->render_pass = VK_NULL_HANDLE;
     ctx->gpus = NULL;
     ctx->gpus_size = 0;
-    ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;    
+    ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;
 }
 
 static bool create_instance(vk_context *ctx, SDL_Window *window) {
@@ -105,11 +106,11 @@ static bool init_vulkan_function_loader() {
 
 static bool enumerate_physical_devices(vk_context *ctx) {
     uint32_t num_physical_devices = 0;
-    VkPhysicalDevice physical_devices[MAX_PHYSICAL_DEVICES];	
+    VkPhysicalDevice physical_devices[MAX_PHYSICAL_DEVICES];
 
     CHECK_VK(vk_EnumeratePhysicalDevices(ctx->instance, &num_physical_devices, NULL));
     CHECK_VK_VAL(num_physical_devices > 0, "No physical_devices");
-    CHECK_VK_VAL(num_physical_devices <= MAX_PHYSICAL_DEVICES, "Not enough space for physical devices");	
+    CHECK_VK_VAL(num_physical_devices <= MAX_PHYSICAL_DEVICES, "Not enough space for physical devices");
 
     CHECK_VK(vk_EnumeratePhysicalDevices(ctx->instance, &num_physical_devices, physical_devices));
     CHECK_VK_VAL(num_physical_devices > 0, "No physical devices");
@@ -136,7 +137,7 @@ static bool choose_suitable_graphics_gpu(vk_context *ctx) {
     int maxScore = -1;
     for (uint32_t i = 0; i < ctx->gpus_size; i++) {
         if (is_gpu_suitable_for_graphics(&ctx->gpus[i], ctx->surface,
-            &ctx->graphics_family_index, &ctx->present_family_index)) 
+            &ctx->graphics_family_index, &ctx->present_family_index))
         {
             int currentScore = rate_gpu(&ctx->gpus[i]);
             log_info("Found suitable gpu, score: %d", currentScore);
@@ -152,7 +153,7 @@ static bool choose_suitable_graphics_gpu(vk_context *ctx) {
 
 static bool create_device(vk_context *ctx) {
     uint32_t indices[] = { ctx->graphics_family_index, ctx->present_family_index };
-    
+
     VkDeviceQueueCreateInfo devq_info[2];
     uint32_t queue_count = indices[0] == indices[1] ? 1 : 2;
     const float priority = 1.0f;
@@ -191,7 +192,7 @@ static bool create_device(vk_context *ctx) {
     };
 
     CHECK_VK(vk_CreateDevice(gpu->device, &info, NULL, &ctx->device));
-    
+
     return true;
 }
 
@@ -214,8 +215,25 @@ static bool create_semaphores(vk_context *ctx) {
     };
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->acquire_semaphores[i]));
-        CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->render_complete_semaphores[i]));		
+        CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->render_complete_semaphores[i]));
     }
+    return true;
+}
+
+static bool create_query_pools(vk_context *ctx) {
+    VkQueryPoolCreateInfo query_pool_info = {
+        .sType              = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .pNext              = NULL,
+        .flags              = 0,
+        .queryType          = VK_QUERY_TYPE_TIMESTAMP,
+        .queryCount         = NUM_TIMESTAMP_QUERIES,
+        .pipelineStatistics = 0
+    };
+
+    for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+        CHECK_VK(vk_CreateQueryPool(ctx->device, &query_pool_info, NULL, &ctx->query_pools[i]));
+    }
+
     return true;
 }
 
@@ -224,7 +242,7 @@ static bool create_command_pool(vk_context *ctx) {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = NULL,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = ctx->graphics_family_index 
+        .queueFamilyIndex = ctx->graphics_family_index
     };
 
     CHECK_VK(vk_CreateCommandPool(ctx->device, &pool_info, NULL, &ctx->command_pool));
@@ -311,9 +329,9 @@ static bool create_swapchain(vk_context *ctx) {
 static bool get_depth_format(vk_context *ctx) {
     gpu_info *gpu = &ctx->gpus[ctx->selected_gpu];
 
-    VkFormat formats[] = {  
-        VK_FORMAT_D32_SFLOAT_S8_UINT, 
-        VK_FORMAT_D24_UNORM_S8_UINT 
+    VkFormat formats[] = {
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT
     };
     // Make sure to check it supports optimal tiling and is a depth/stencil format.
     bool success = choose_supported_format(gpu, &ctx->depth_format, formats, 2, VK_IMAGE_TILING_OPTIMAL,
@@ -360,10 +378,10 @@ static bool create_render_targets(vk_context *ctx) {
         CHECK_VK(vk_CreateImageView(ctx->device, &image_view_info, NULL, &ctx->swapchain_views[i]));
     }
 
-    gpu_info *gpu = &ctx->gpus[ctx->selected_gpu]; 
+    gpu_info *gpu = &ctx->gpus[ctx->selected_gpu];
     VkImageFormatProperties fmt_props = {};
-    vk_GetPhysicalDeviceImageFormatProperties(gpu->device, ctx->surface_format.format, 
-        VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &fmt_props);   
+    vk_GetPhysicalDeviceImageFormatProperties(gpu->device, ctx->surface_format.format,
+        VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &fmt_props);
 
     if (render_config.desired_sample_count >= 16 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_16_BIT)) {
         ctx->sample_count = VK_SAMPLE_COUNT_16_BIT;
@@ -374,7 +392,7 @@ static bool create_render_targets(vk_context *ctx) {
     } else if (render_config.desired_sample_count >= 2 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_2_BIT)) {
         ctx->sample_count = VK_SAMPLE_COUNT_2_BIT;
     }
-    
+
     init_image(&ctx->depth_image);
     ctx->depth_image.props.format = FMT_DEPTH;
     ctx->depth_image.props.width = render_config.width;
@@ -477,7 +495,7 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
     init_vk_context(ctx);
     return init_vulkan_function_loader() &&
         load_global_functions() &&
-        create_instance(ctx, window) && 
+        create_instance(ctx, window) &&
         load_instance_vulkan_functions(ctx->instance) &&
         create_surface(ctx, window) &&
         enumerate_physical_devices(ctx) &&
@@ -486,7 +504,8 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
         load_device_level_functions(ctx->device) &&
         init_queues(ctx) &&
         create_semaphores(ctx) &&
-        create_command_pool(ctx) && 
+        create_query_pools(ctx) &&
+        create_command_pool(ctx) &&
         create_command_buffers(ctx) &&
         vk_init_allocator() &&
         vk_init_stage_manager() &&
@@ -534,6 +553,13 @@ void shutdown_vulkan(vk_context *ctx) {
     if (vk_DestroyCommandPool && ctx->command_pool) {
         vk_DestroyCommandPool(ctx->device, ctx->command_pool, NULL);
     }
+    if (vk_DestroyQueryPool) {
+        for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+            if (ctx->query_pools[i]) {
+                vk_DestroyQueryPool(ctx->device, ctx->query_pools[i], NULL);
+            }
+        }
+    }
     if (vk_DestroySemaphore) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->acquire_semaphores[i]) {
@@ -553,10 +579,10 @@ void shutdown_vulkan(vk_context *ctx) {
     if (ctx->device && vk_DestroyDevice) {
         vk_DestroyDevice(ctx->device, NULL);
     }
-    if (ctx->surface && vk_DestroySurfaceKHR) {	
+    if (ctx->surface && vk_DestroySurfaceKHR) {
         vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
     }
-    if (ctx->instance && vk_DestroyInstance) {	
+    if (ctx->instance && vk_DestroyInstance) {
         vk_DestroyInstance(ctx->instance, NULL);
     }
     init_vk_context(ctx);

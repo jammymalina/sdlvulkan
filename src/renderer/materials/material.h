@@ -1,7 +1,8 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
-#include "../utils/lib.h"
+#include <stddef.h>
+#include "../../utils/lib.h"
 
 typedef enum texture_type {
     TT_DISABLED,
@@ -45,5 +46,7 @@ typedef enum texture_repeat {
     TR_CLAMP_TO_ZERO,
     TR_CLAMP_TO_ZERO_ALPHA
 } texture_repeat;
+
+size_t bit_count_image_format(texture_format format);
 
 #endif // MATERIAL_H

@@ -4,6 +4,7 @@
 #include "../logger/logger.h"
 #include "./tools/tools.h"
 #include "./context.h"
+#include "./memory/staging.h"
 
 static inline VkFormat texture_format_to_vk_format(texture_format format) {
     switch (format) {
@@ -252,6 +253,87 @@ bool alloc_image(vk_image *image) {
     };
 
     CHECK_VK(vk_CreateImageView(context.device, &view_info, NULL, &image->view));
+
+    return true;
+}
+
+bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, size_t z,
+    size_t width, size_t height, void *picture, size_t pixel_pitch) 
+{
+    if (pixel_pitch >= image->props.num_levels) {
+        log_error("Invalid pixel pitch, it must be < than the number of levels");
+        return false;
+    }
+
+    size_t size = width * height * (bit_count_image_format(image->props.format) / 8);
+
+    VkBuffer buffer;
+    VkCommandBuffer command_buffer;
+    VkDeviceSize offset = 0;
+    byte *data = vk_stage(size, 16, &command_buffer, &buffer, &offset);
+    if (image->props.format == FMT_RGB565) {
+        byte *img_data = (byte*) picture;
+        for (size_t i = 0; i < size; i += 2) {
+            data[i] = img_data[i + 1];
+            data[i + 1] = img_data[i];
+        }
+    } else {
+        memcpy(data, picture, size);
+    }
+
+    VkBufferImageCopy img_copy = {
+        .bufferOffset = offset,
+        .bufferRowLength = pixel_pitch,
+        .bufferImageHeight = height,
+        .imageSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = mip_level,
+            .baseArrayLayer = z,
+            .layerCount = 1
+        },
+        .imageOffset = {
+            .x = x,
+            .y = y,
+            .z = 0
+        },
+        .imageExtent = {
+            .width = width,
+            .height = height,
+            .depth = 1
+        }
+    };
+
+    VkImageMemoryBarrier barrier = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .pNext = NULL,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image->image,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = image->props.num_levels,
+            .baseArrayLayer = z,
+            .layerCount = 1
+        }
+    };
+
+    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, 
+        NULL, 0, NULL, 1, &barrier);
+    vk_CmdCopyBufferToImage(command_buffer, buffer, image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &img_copy);
+
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0, 
+        NULL, 0, NULL, 1, &barrier);
+
+    image->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     return true;
 }
