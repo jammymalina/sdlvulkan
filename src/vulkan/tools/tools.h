@@ -3,13 +3,13 @@
 
 #include <vulkan/vulkan.h>
 
-#define CHECK_VK(x)                                                         \
-	do {                                                                    \
+#define CHECK_VK(x)                                                                       \
+	do {                                                                                  \
 		VkResult reneger_strummy = x;                                                     \
-		if (reneger_strummy  != VK_SUCCESS) {                                              \
+		if (reneger_strummy  != VK_SUCCESS) {                                             \
 			log_error("VK error: %s - %s", #x, vulkan_result_to_string(reneger_strummy)); \
-			return false;                                                   \
-		}                                                                   \
+			return false;                                                                 \
+		}                                                                                 \
 	} while(0)
 
 #define CHECK_VK_VAL(x, s)                                                  \

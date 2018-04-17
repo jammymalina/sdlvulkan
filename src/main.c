@@ -10,6 +10,7 @@
 #include "./window/config.h"
 #include "./renderer/config.h"
 #include "./vulkan/memory/memory.h"
+#include "./renderer/backend.h"
 
 void quit(int rc);
 
@@ -74,6 +75,7 @@ int main(int argc, char* args[]) {
     if (!init_vulkan(&context, window)) {
         quit(EXIT_FAILURE);
     }
+    init_renderer();
 
     bool is_running = true;
     while (is_running) {
@@ -89,7 +91,9 @@ int main(int argc, char* args[]) {
                     }
                     break;
             }
-
+            if (!render()) {
+                is_running = false;
+            }
         }
     }
 

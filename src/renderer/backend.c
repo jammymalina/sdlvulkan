@@ -7,17 +7,21 @@
 #include "../vulkan/gpu_info.h"
 #include "../vulkan/memory/memory.h"
 #include "../vulkan/memory/staging.h"
+#include "../logger/logger.h"
+
+render_backend renderer;
 
 void init_backend_counters(backend_counters *b) {
     b->gpu_microsec = 0;
 }
 
-void init_renderer(renderer *r) {
+void init_render_backend(render_backend *r) {
     r->current_frame = 0;
     r->current_swap_index = 0;
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         r->query_index[i] = 0;
+        r->command_buffer_recorded[i] = false;
         for (size_t j = 0; j < NUM_TIMESTAMP_QUERIES; j++) {
             r->query_results[i][j] = 0;
         }
@@ -26,7 +30,7 @@ void init_renderer(renderer *r) {
     init_backend_counters(&r->pc);
 }
 
-static bool start_frame(renderer *r) {
+static bool start_frame(render_backend *r) {
     CHECK_VK(vk_AcquireNextImageKHR(context.device, context.swapchain, UINT64_MAX,
         context.acquire_semaphores[r->current_frame], VK_NULL_HANDLE, &r->current_swap_index));
     vk_empty_garbage();
@@ -53,9 +57,9 @@ static bool start_frame(renderer *r) {
     VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
 
     VkCommandBufferBeginInfo command_buffer_begin_info = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext = NULL,
-        .flags = 0,
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext            = NULL,
+        .flags            = 0,
         .pInheritanceInfo = NULL
     };
 
@@ -64,19 +68,19 @@ static bool start_frame(renderer *r) {
     vk_CmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
 
     VkRenderPassBeginInfo render_pass_begin_info = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .pNext = NULL,
-        .renderPass = context.render_pass,
+        .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .pNext       = NULL,
+        .renderPass  = context.render_pass,
         .framebuffer = context.framebuffers[r->current_swap_index],
-        .renderArea = {
-            .offset = {
+        .renderArea  = {
+            .offset  = {
                 .x = 0,
                 .y = 0
             },
             .extent = context.extent
         },
         .clearValueCount = 0,
-        .pClearValues = NULL,
+        .pClearValues    = NULL,
     };
 
     vk_CmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -84,4 +88,98 @@ static bool start_frame(renderer *r) {
     r->query_index[r->current_frame]++;
 
     return true;
+}
+
+static bool end_frame(render_backend *r) {
+    VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
+
+    vk_CmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, context.query_pools[r->current_frame], 
+        r->query_index[r->current_frame]);
+    
+    vk_CmdEndRenderPass(command_buffer);
+
+    r->query_index[r->current_frame]++;
+    VkImageMemoryBarrier barrier = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .pNext = NULL,
+        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask = 0,
+        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = context.swapchain_images[r->current_frame],
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        }
+    };
+
+    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+    CHECK_VK(vk_EndCommandBuffer(command_buffer));
+    r->command_buffer_recorded[r->current_frame] = true;
+
+    VkSemaphore *acquire_semaphore = &context.acquire_semaphores[r->current_frame];
+    VkSemaphore *render_complete_semaphore = &context.render_complete_semaphores[r->current_frame];
+
+    VkPipelineStageFlags dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = NULL,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = acquire_semaphore,
+        .pWaitDstStageMask = &dst_stage_mask,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command_buffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = render_complete_semaphore
+    };
+
+    CHECK_VK(vk_QueueSubmit(context.graphics_queue, 1, &submit_info, context.command_buffer_fences[r->current_frame]));
+
+    VkPresentInfoKHR present_info = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .pNext = NULL,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = render_complete_semaphore,
+        .swapchainCount = 1,
+        .pSwapchains = &context.swapchain,
+        .pImageIndices = &r->current_swap_index,
+        .pResults = NULL
+    };
+
+    CHECK_VK(vk_QueuePresentKHR(context.present_queue, &present_info));
+
+    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA; 
+
+    return true;
+}
+
+bool execute_render_backend(render_backend *r) {
+    bool success = start_frame(r);
+    if (!success) {
+        log_error("Unable to start a frame");
+        return false;
+    }
+    
+    success = end_frame(r);
+    if (!success) {
+        log_error("Uable to finish a frame");
+        return false;
+    }
+
+    return true;
+}
+
+void init_renderer() {
+    init_render_backend(&renderer);
+}
+
+bool render() {
+    return execute_render_backend(&renderer);
 }

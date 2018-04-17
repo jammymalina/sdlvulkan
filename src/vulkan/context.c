@@ -473,7 +473,7 @@ static bool create_render_pass(vk_context *ctx) {
 
 static bool create_framebuffers(vk_context *ctx) {
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-        VkImageView attachments[] = { ctx->swapchain_views[i], VK_NULL_HANDLE };
+        VkImageView attachments[] = { ctx->swapchain_views[i], ctx->depth_image.view };
         VkFramebufferCreateInfo framebuffer_info = {
             .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .pNext           = NULL,

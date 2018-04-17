@@ -66,14 +66,14 @@ bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buf
     VkDeviceSize num_bytes = get_allocated_buffer_size(buffer);
 
     VkBufferCreateInfo buffer_info = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .size = num_bytes,
-        .usage = buffer_type_to_vulkan_buffer_usage(buffer->type),
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext                 = NULL,
+        .flags                 = 0,
+        .size                  = num_bytes,
+        .usage                 = buffer_type_to_vulkan_buffer_usage(buffer->type),
+        .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices = NULL
+        .pQueueFamilyIndices   = NULL
     };
 
     if (buffer->usage == BU_STATIC) {
@@ -167,7 +167,7 @@ bool update_data_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize size, VkD
     VkBufferCopy buffer_copy = {
         .srcOffset = stage_offset,
         .dstOffset = get_buffer_offset(buffer) + offset,
-        .size = size
+        .size      = size
     };
     vk_CmdCopyBuffer(command_buffer, stage_buffer, buffer->buffer, 1, &buffer_copy);
 
