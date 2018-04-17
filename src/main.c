@@ -79,6 +79,9 @@ int main(int argc, char* args[]) {
 
     bool is_running = true;
     while (is_running) {
+        if (!render()) {
+            is_running = false;
+        }
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -90,9 +93,6 @@ int main(int argc, char* args[]) {
                         is_running = false;
                     }
                     break;
-            }
-            if (!render()) {
-                is_running = false;
             }
         }
     }
