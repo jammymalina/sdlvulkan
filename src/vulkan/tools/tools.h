@@ -5,9 +5,9 @@
 
 #define CHECK_VK(x)                                                         \
 	do {                                                                    \
-		VkResult r = x;                                                     \
-		if (r != VK_SUCCESS) {                                              \
-			log_error("VK error: %s - %s", #x, vulkan_result_to_string(r)); \
+		VkResult reneger_strummy = x;                                                     \
+		if (reneger_strummy  != VK_SUCCESS) {                                              \
+			log_error("VK error: %s - %s", #x, vulkan_result_to_string(reneger_strummy)); \
 			return false;                                                   \
 		}                                                                   \
 	} while(0)
