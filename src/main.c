@@ -33,14 +33,14 @@ void shutdown_SDL() {
 }
 
 void quit(int rc) {
-    shutdown_vulkan(&context); 
-    shutdown_SDL();  
+    shutdown_vulkan(&context);
+    shutdown_SDL();
     exit(rc);
 }
 
 int main(int argc, char* args[]) {
     log_info("Binary path: %s", args[0]);
-    
+
     init_vk_context(&context);
 
     if (!init_SDL()) {
@@ -51,12 +51,12 @@ int main(int argc, char* args[]) {
     SDL_Window *window = NULL;
 
     if (window_config.fullscreen) {
-        window = SDL_CreateWindow("Vulkan sample", 0, 0, 0, 0, 
+        window = SDL_CreateWindow("Vulkan sample", 0, 0, 0, 0,
             SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN);
         SDL_GetWindowSize(window, &window_config.width, &window_config.height);
     } else {
         window = SDL_CreateWindow(
-            "Vulkan sample", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_config.width, window_config.height, 
+            "Vulkan sample", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_config.width, window_config.height,
             SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
         );
     }

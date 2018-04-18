@@ -7,6 +7,7 @@
 
 #include <vulkan/vulkan.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef enum render_param {
     RENDER_PARAMS_TOTAL
@@ -29,6 +30,14 @@ typedef struct shader {
     render_param render_params[MAX_SHADER_RENDER_PARAMS];
     size_t render_params_size;
 } shader;
+
+typedef struct render_program {
+    char name[MAX_SHADER_NAME_SIZE];
+    int vertex_shader_index;
+    int fragment_shader_index;
+    VkPipelineLayout pipeline_layout;
+    VkDescriptorSetLayout descriptor_set_layout;
+} render_program;
 
 void init_shader(shader *s);
 
