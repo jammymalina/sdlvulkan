@@ -3,6 +3,15 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+bool string_copy(char *dest, size_t max_dest_length, const char *src) {
+    size_t i;
+    for (i = 0; i < max_dest_length - 1 && src[i] != '\0'; i++) {
+        dest[i] = src[i];
+    }
+    dest[i] = '\0';
+    return src[i] == '\0';
+}
+
 bool string_compare(const char *str1, const char *str2) {
     size_t i;
     for (i = 0; str1[i] == str2[i] && str1[i] != '\0' && str2[i] != '\0'; i++);
