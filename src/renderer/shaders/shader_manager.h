@@ -20,8 +20,6 @@ typedef enum shader_binding {
 } shader_binding;
 
 typedef struct shader {
-    char name[MAX_SHADER_NAME_SIZE];
-
     VkShaderModule module;
 
     shader_binding bindings[MAX_SHADER_BINDINGS_SIZE];
@@ -37,6 +35,7 @@ typedef struct render_program {
     int fragment_shader_index;
     VkPipelineLayout pipeline_layout;
     VkDescriptorSetLayout descriptor_set_layout;
+
 } render_program;
 
 void init_shader(shader *s);
