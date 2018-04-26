@@ -18,13 +18,34 @@ bool string_compare(const char *str1, const char *str2) {
     return str1[i] == str2[i];
 }
 
+bool string_append(char *dest, size_t max_dest_length, const char *src) {
+    size_t i, j;
+    for (i = 0; dest[i] != '\0' && i < max_dest_length - 1; i++);
+
+    if (i >= max_dest_length - 1) {
+        dest[max_dest_length - 1] = '\0';
+        return false;
+    }
+
+    for (j = 0; src[j] != '\0' && i < max_dest_length - 1; j++, i++) {
+        dest[i + j] = src[j];
+    }
+
+    if (i >= max_dest_length - 1) {
+        dest[max_dest_length - 1] = '\0';
+        return false;
+    }
+    dest[i] = '\0';
+    return src[j] == '\0';
+}
+
 void string_reverse(char *str, size_t start_index, size_t end_index) {
     while (start_index < end_index) {
         char tmp = str[start_index];
         str[start_index] = str[end_index];
         str[end_index] = tmp;
         start_index++;
-        end_index--; 
+        end_index--;
     }
 }
 
