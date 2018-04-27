@@ -4,6 +4,10 @@
 #include <stdlib.h>
 
 bool string_copy(char *dest, size_t max_dest_length, const char *src) {
+    if (max_dest_length == 0) {
+        return false;
+    }
+
     size_t i;
     for (i = 0; i < max_dest_length - 1 && src[i] != '\0'; i++) {
         dest[i] = src[i];
@@ -19,6 +23,10 @@ bool string_compare(const char *str1, const char *str2) {
 }
 
 bool string_append(char *dest, size_t max_dest_length, const char *src) {
+    if (max_dest_length == 0) {
+        return false;
+    }
+
     size_t i, j;
     for (i = 0; dest[i] != '\0' && i < max_dest_length - 1; i++);
 
@@ -50,6 +58,10 @@ void string_reverse(char *str, size_t start_index, size_t end_index) {
 }
 
 bool string_add_number_postfix(char *dest, size_t max_dest_length, const char *str, int num, int base) {
+    if (max_dest_length == 0) {
+        return false;
+    }
+
     size_t i;
     for (i = 0; str[i] != '\0' && i < max_dest_length - 1; i++) {
         dest[i] = str[i];

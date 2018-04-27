@@ -1,6 +1,7 @@
 #include "./file.h"
 
 #include "../logger/logger.h"
+#include "../string/string.h"
 #include "./heap.h"
 
 size_t get_file_size_bytes(FILE *file) {
@@ -46,3 +47,16 @@ size_t read_binary_file(const char *filepath, void **data) {
 
     return file_size;
 }
+
+bool set_dirname(const char *src) {
+    size_t last_file_separator = MAX_PATH_LENGTH + 1;
+    for (size_t i = 0; i < MAX_PATH_LENGTH - 1 && src[i] != '\0'; i++) {
+
+    }
+    if (last_file_separator == MAX_PATH_LENGTH + 1) {
+        return string_copy(dirname, MAX_PATH_LENGTH, "");
+    }
+    return true;
+}
+
+

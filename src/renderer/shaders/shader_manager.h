@@ -1,14 +1,15 @@
 #ifndef SHADER_MANAGER_H
 #define SHADER_MANAGER_H
 
-#define MAX_SHADER_NAME_SIZE 256
-#define MAX_SHADER_RENDER_PARAMS 32
-#define MAX_SHADER_BINDINGS_SIZE 32
-
 #include <vulkan/vulkan.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+
+#define MAX_SHADER_NAME_SIZE 256
+#define MAX_SHADER_RENDER_PARAMS 32
+#define MAX_SHADER_BINDINGS_SIZE 32
+#define MAX_SHADERS 256
 
 typedef enum render_param {
     RENDER_PARAMS_TOTAL
@@ -51,8 +52,18 @@ typedef struct render_program {
 
 typedef struct render_program_manager {
     int current_render_program;
+
+    shader *shaders;
+    size_t shaders_size;
 } render_program_manager;
 
 void init_shader(shader *s);
+bool init_shader_from_file(shader *s, const char *name, const char *filepath);
+void destroy_shader(shader *s);
+
+bool init_render_program_manager(render_program_manager *m);
+bool load_shader(render_program_manager *m, const char *name, const char *filepath);
+void destroy_render_program_manager(render_program_manager *m);
+
 
 #endif // SHADER_MANAGER_H

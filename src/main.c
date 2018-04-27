@@ -11,6 +11,7 @@
 #include "./renderer/config.h"
 #include "./vulkan/memory/memory.h"
 #include "./renderer/backend.h"
+#include "./utils/file.h"
 
 void quit(int rc);
 
@@ -39,7 +40,8 @@ void quit(int rc) {
 }
 
 int main(int argc, char* args[]) {
-    log_info("Binary path: %s", args[0]);
+    set_dirname(args[0]);
+    log_info("Binary path: %s, directory: %s", args[0], dirname);
 
     init_vk_context(&context);
 

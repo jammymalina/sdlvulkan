@@ -1,8 +1,8 @@
-TARGET   = vulkanapp 
+TARGET   = vulkanapp
 
 CC       = gcc
 # compiling flags here
-# CFLAGS = -std=c11 -flto -O3 -march=native 
+# CFLAGS = -std=c11 -flto -O3 -march=native
 CFLAGS = -std=c11 -Wall -g3
 
 LINKER   = gcc -o
@@ -25,8 +25,8 @@ SOURCES  := $(wildcard $(SRCDIR)/*.c $(SRCDIR)/**/*.c $(SRCDIR)/**/**/*.c)
 
 SHADER_SOURCES := $(wildcard $(SHADER_SRC_DIR)/basic/*.vert $(SHADER_SRC_DIR)/basic/*.frag)
 
-INCLUDE_DIRS := 
-LIB_DIRS     := 
+INCLUDE_DIRS :=
+LIB_DIRS     :=
 
 OBJECTS         := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 SHADER_OBJECTS  := $(SHADER_SOURCES:$(SHADER_SRC_DIR)/%=$(SHADER_OBJ_DIR)/%.svm)
