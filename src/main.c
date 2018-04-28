@@ -40,7 +40,9 @@ void quit(int rc) {
 }
 
 int main(int argc, char* args[]) {
-    set_dirname(args[0]);
+    if (!set_dirname(args[0])) {
+        exit(EXIT_FAILURE);
+    }
     log_info("Binary path: %s, directory: %s", args[0], dirname);
 
     init_vk_context(&context);

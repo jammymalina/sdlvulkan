@@ -11,6 +11,7 @@
 #include "../renderer/config.h"
 #include "./memory/memory.h"
 #include "./memory/staging.h"
+#include "../renderer/shaders/shader_manager.h"
 
 vk_context context;
 
@@ -513,10 +514,12 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
         get_depth_format(ctx) &&
         create_render_targets(ctx) &&
         create_render_pass(ctx) &&
-        create_framebuffers(ctx);
+        create_framebuffers(ctx) &&
+        init_ren_pm();
 }
 
 void shutdown_vulkan(vk_context *ctx) {
+    destroy_ren_pm();
     vk_destroy_stage_manager();
     vk_destroy_allocator();
     if (vk_DestroyFramebuffer) {

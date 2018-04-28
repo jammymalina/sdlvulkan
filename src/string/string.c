@@ -1,7 +1,16 @@
 #include "./string.h"
 
-#include <stddef.h>
 #include <stdlib.h>
+
+size_t string_length(const char *str) {
+    size_t i;
+    for (i = 0; str[i] != '\0'; i++);
+    return i;
+}
+
+bool is_empty_string(const char *str) {
+    return str[0] == '\0';
+}
 
 bool string_copy(char *dest, size_t max_dest_length, const char *src) {
     if (max_dest_length == 0) {
@@ -16,7 +25,7 @@ bool string_copy(char *dest, size_t max_dest_length, const char *src) {
     return src[i] == '\0';
 }
 
-bool string_compare(const char *str1, const char *str2) {
+bool string_equal(const char *str1, const char *str2) {
     size_t i;
     for (i = 0; str1[i] == str2[i] && str1[i] != '\0' && str2[i] != '\0'; i++);
     return str1[i] == str2[i];
@@ -44,6 +53,7 @@ bool string_append(char *dest, size_t max_dest_length, const char *src) {
         return false;
     }
     dest[i] = '\0';
+
     return src[j] == '\0';
 }
 

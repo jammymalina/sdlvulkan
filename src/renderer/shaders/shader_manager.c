@@ -8,19 +8,73 @@
 #include "../../vulkan/tools/tools.h"
 #include "../../vulkan/functions/functions.h"
 
+render_program_manager ren_pm;
+
+shader_type extension_to_shader_type(const char *extension) {
+    if (string_equal(extension, "vert"))
+        return SHADER_TYPE_VERTEX;
+    if (string_equal(extension, "frag"))
+        return SHADER_TYPE_FRAGMENT;
+    if (string_equal(extension, "tesc"))
+        return SHADER_TYPE_TESS_CTRL;
+    if (string_equal(extension, "tese"))
+        return SHADER_TYPE_TESS_EVAL;
+    if (string_equal(extension, "geom"))
+        return SHADER_TYPE_GEOMETRY;
+    if (string_equal(extension, "comp"))
+        return SHADER_TYPE_COMPUTE;
+
+    return SHADER_TYPE_UNDEFINED;
+}
+
+VkShaderStageFlagBits shader_type_to_shader_stage(shader_type type) {
+    switch (type) {
+        case SHADER_TYPE_VERTEX:
+            return VK_SHADER_STAGE_VERTEX_BIT;
+        case SHADER_TYPE_FRAGMENT:
+            return VK_SHADER_STAGE_FRAGMENT_BIT;
+        case SHADER_TYPE_TESS_CTRL:
+            return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        case SHADER_TYPE_TESS_EVAL:
+            return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        case SHADER_TYPE_GEOMETRY:
+            return VK_SHADER_STAGE_GEOMETRY_BIT;
+        case SHADER_TYPE_COMPUTE:
+            return VK_SHADER_STAGE_COMPUTE_BIT;
+        default:
+            return VK_SHADER_STAGE_ALL;
+    }
+}
+
 void init_shader(shader *s) {
     string_copy(s->name, MAX_SHADER_NAME_SIZE, "");
     s->module = VK_NULL_HANDLE;
+    s->type = SHADER_TYPE_UNDEFINED;
     s->bindings_size = 0;
     s->render_params_size = 0;
 }
 
 bool init_shader_from_file(shader *s, const char *name, const char *filepath) {
+    init_shader(s);
+
     bool success = string_copy(s->name, MAX_SHADER_NAME_SIZE, name);
     if (!success) {
         log_error("Name too long for a shader: %s", name);
         return false;
     }
+
+    char shader_extension[MAX_PATH_LENGTH];
+    success = extract_extension(shader_extension, filepath, 1);
+    if (!success) {
+        log_error("Unable to extract shader extension from path: %s", filepath);
+        return false;
+    }
+    shader_type t = extension_to_shader_type(shader_extension);
+    if (t == SHADER_TYPE_UNDEFINED) {
+        log_error("Invalid shader extension: %s", shader_extension);
+        return false;
+    }
+    s->type = t;
 
     void *shader_code = NULL;
     size_t shader_code_byte_size = read_binary_file(filepath, &shader_code);
@@ -73,6 +127,24 @@ bool init_render_program_manager(render_program_manager *m) {
     return true;
 }
 
+static bool add_shader_to_render_program_manager(render_program_manager *m, const char *name, const char *filepath) {
+    if (m->shaders_size >= MAX_SHADERS) {
+        log_error("Not enough space for another shader");
+        return false;
+    }
+
+    shader s;
+    if (!init_shader_from_file(&s, name, filepath)) {
+        log_error("Error while creating shader: %s", name);
+        return false;
+    }
+
+    m->shaders[m->shaders_size] = s;
+    m->shaders_size++;
+
+    return true;
+}
+
 void destroy_render_program_manager(render_program_manager *m) {
     for (size_t i = 0; i < m->shaders_size; i++) {
         destroy_shader(&m->shaders[i]);
@@ -82,4 +154,12 @@ void destroy_render_program_manager(render_program_manager *m) {
         mem_free(m->shaders);
         m->shaders = NULL;
     }
+}
+
+bool init_ren_pm() {
+    return init_render_program_manager(&ren_pm);
+}
+
+void destroy_ren_pm() {
+    destroy_render_program_manager(&ren_pm);
 }

@@ -91,7 +91,7 @@ bool check_desired_extensions(gpu_info *gpu, const char *const desired_extension
 
     for (size_t i = 0; i < desired_extensions_size; i++) {
         for (size_t j = 0; j < gpu->extension_props_size; j++) {
-            if (string_compare(desired_extensions[i], gpu->extension_props[j].extensionName)) {
+            if (string_equal(desired_extensions[i], gpu->extension_props[j].extensionName)) {
                 available++;
                 break;
             }
