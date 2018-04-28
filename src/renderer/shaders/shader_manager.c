@@ -83,7 +83,7 @@ bool init_shader_from_file(shader *s, const char *name, const char *filepath) {
         return false;
     }
     // Shader data must be aligned to 32 bits = 4 bytes
-    if (is_4_byte_aligned(shader_code)) {
+    if (!is_4_byte_aligned(shader_code)) {
         log_error("Shader code is incorrectly aligned: %s", filepath);
         mem_free(shader_code);
         return false;
@@ -116,17 +116,6 @@ void destroy_shader(shader *s) {
     }
 }
 
-bool init_render_program_manager(render_program_manager *m) {
-    m->shaders_size = 0;
-    m->shaders = mem_alloc(MAX_SHADERS * sizeof(shader));
-    CHECK_ALLOC(m->shaders, "Allocation fail");
-    for (size_t i = 0; i < MAX_SHADERS; i++) {
-        init_shader(&m->shaders[i]);
-    }
-
-    return true;
-}
-
 static bool add_shader_to_render_program_manager(render_program_manager *m, const char *name, const char *filepath) {
     if (m->shaders_size >= MAX_SHADERS) {
         log_error("Not enough space for another shader");
@@ -143,6 +132,20 @@ static bool add_shader_to_render_program_manager(render_program_manager *m, cons
     m->shaders_size++;
 
     return true;
+}
+
+bool init_render_program_manager(render_program_manager *m) {
+    m->shaders_size = 0;
+    m->shaders = mem_alloc(MAX_SHADERS * sizeof(shader));
+    CHECK_ALLOC(m->shaders, "Allocation fail");
+    for (size_t i = 0; i < MAX_SHADERS; i++) {
+        init_shader(&m->shaders[i]);
+    }
+
+    bool success = add_shader_to_render_program_manager(m, "test.vert", "shaders/basic/test.vert.svm") &&
+        add_shader_to_render_program_manager(m, "test.frag", "shaders/basic/test.vert.svm");
+
+    return success;
 }
 
 void destroy_render_program_manager(render_program_manager *m) {
