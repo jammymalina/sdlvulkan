@@ -16,8 +16,14 @@ typedef struct pipeline_state {
 
 typedef struct render_program {
     char name[MAX_SHADER_NAME_SIZE];
-    int vertex_shader_index;
-    int fragment_shader_index;
+    struct {
+        int vert;
+        int frag;
+        int geom;
+        int tesc;
+        int tese;
+        int comp;
+    } shader_indices;
     VkPipelineLayout pipeline_layout;
     VkDescriptorSetLayout descriptor_set_layout;
 } render_program;

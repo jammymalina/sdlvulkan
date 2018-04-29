@@ -51,20 +51,10 @@ size_t read_binary_file(const char *filepath, void **data) {
 }
 
 bool path_resolve(char dest[MAX_PATH_LENGTH], const char *directory, ...) {
-    char directory_separator[4] = { '\0', '\0', '\0', '\0' };
-    if (is_empty_string(directory)) {
-        directory_separator[0] = '.';
-        directory_separator[1] = PATH_SEPARATOR;
-        directory_separator[2] = '\0';
-    } else {
-        if (directory[string_length(directory) - 1] != PATH_SEPARATOR) {
-            directory_separator[0] = PATH_SEPARATOR;
-            directory_separator[1] = '\0';
-        }
-    }
+    const char *directory_prefix = is_empty_string(directory) ? "." : "";
 
     bool success = string_copy(dest, MAX_PATH_LENGTH, directory) &&
-        string_append(dest, MAX_PATH_LENGTH, directory_separator);
+        string_append(dest, MAX_PATH_LENGTH, directory_prefix);
 
     va_list args;
     va_start(args, directory);
@@ -74,13 +64,23 @@ bool path_resolve(char dest[MAX_PATH_LENGTH], const char *directory, ...) {
             break;
         }
         const char *trimmed_filepath = filepath;
+        // trim path separators from the start of the string
         while (!is_empty_string(trimmed_filepath) && trimmed_filepath[0] == PATH_SEPARATOR) {
             trimmed_filepath++;
         }
-        success = string_append(dest, MAX_PATH_LENGTH, trimmed_filepath);
+        if (!is_empty_string(filepath)) {
+            success = string_append(dest, MAX_PATH_LENGTH, PATH_SEPARATOR_STRING) &&
+                string_append(dest, MAX_PATH_LENGTH, trimmed_filepath);
+            // trim path separators from the end of the string
+            size_t len = string_length(dest);
+            while (success && dest[len - 1] == PATH_SEPARATOR) {
+                dest[len - 1] = '\0';
+                len--;
+            }
+        }
     }
-
     va_end(args);
+
     if (!success) {
         log_error("Unable to resolve path, path is too long");
         string_copy(dest, MAX_PATH_LENGTH, "");

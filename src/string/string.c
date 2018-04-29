@@ -43,7 +43,7 @@ bool string_append(char *dest, size_t max_dest_length, const char *src) {
     for (i = 0; dest[i] != '\0' && i < max_dest_length - 1; i++);
 
     for (j = 0; src[j] != '\0' && i < max_dest_length - 1; j++, i++) {
-        dest[i + j] = src[j];
+        dest[i] = src[j];
     }
     dest[i] = '\0';
 

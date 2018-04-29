@@ -9,10 +9,12 @@
 
 #if defined(WIN32) || defined(_WIN32)
     #define PATH_SEPARATOR '\\'
+    #define PATH_SEPARATOR_STRING "\\"
     #define is_path_separator(x) \
         ((x) == '\\' || (x) == '/')
 #else
     #define PATH_SEPARATOR '/'
+    #define PATH_SEPARATOR_STRING "/"
     #define is_path_separator(x) \
         ((x) == '/')
 #endif

@@ -28,7 +28,10 @@ typedef enum shader_type {
     SHADER_TYPE_UNDEFINED = 64
 } shader_type;
 
+#define SHADER_TYPE_GROUP_GRAPHICS (SHADER_TYPE_VERTEX | SHADER_TYPE_FRAGMENT)
+
 typedef enum shader_instance_type {
+    SHADER_INSTANCE_UNDEFINED = -1,
     SHADER_INSTANCE_TEST,
     SHADER_INSTANCES_TOTAL
 } shader_instance_type;
@@ -53,6 +56,7 @@ typedef enum shader_binding {
 
 typedef struct shader {
     char name[MAX_SHADER_NAME_SIZE];
+    shader_instance_type instance;
     shader_type type;
 
     VkShaderModule module;
@@ -71,7 +75,7 @@ const char* shader_type_to_extension(shader_type type);
 VkShaderStageFlagBits shader_type_to_shader_stage(shader_type type);
 
 void init_shader(shader *s);
-bool init_shader_from_file(shader *s, const char *name, const char *filepath);
+bool init_shader_from_file(shader *s, shader_instance_type instance, const char *name, const char *filepath);
 void destroy_shader(shader *s);
 
 #endif // SHADER_CONFIG_H

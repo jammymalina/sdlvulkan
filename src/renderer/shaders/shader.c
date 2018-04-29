@@ -8,6 +8,7 @@
 #include "../../vulkan/tools/tools.h"
 
 bool shader_resolve_path(char dest[MAX_PATH_LENGTH], const char *name, const char *folder, shader_type type) {
+    string_copy(dest, MAX_PATH_LENGTH, "");
     if (type == SHADER_TYPE_UNDEFINED) {
         log_error("Undefined shader type");
         return false;
@@ -21,14 +22,18 @@ bool shader_resolve_path(char dest[MAX_PATH_LENGTH], const char *name, const cha
         string_append(extension, 32, ".svm");
     if (!success) {
         log_error("Shader extension is too long: %s.svm", glsl_extension);
+        string_copy(dest, MAX_PATH_LENGTH, "");
         return false;
     }
 
-    success = path_resolve(dest, dirname, SHADERS_ROOT_FOLDER, folder) &&
-        string_append(dest, MAX_PATH_LENGTH, name) &&
-        string_append(dest, MAX_PATH_LENGTH, extension);
+    char shader_file[MAX_PATH_LENGTH];
+    success = string_copy(shader_file, MAX_PATH_LENGTH, "") &&
+        string_append(shader_file, MAX_PATH_LENGTH, name) &&
+        string_append(shader_file, MAX_PATH_LENGTH, extension) &&
+        path_resolve(dest, dirname, SHADERS_ROOT_FOLDER, folder, shader_file, NULL);
     if (!success) {
         log_error("Shader filepath is too long: %s", name);
+        string_copy(dest, MAX_PATH_LENGTH, "");
         return false;
     }
 
@@ -92,13 +97,14 @@ VkShaderStageFlagBits shader_type_to_shader_stage(shader_type type) {
 
 void init_shader(shader *s) {
     string_copy(s->name, MAX_SHADER_NAME_SIZE, "");
+    s->instance = SHADER_INSTANCE_UNDEFINED;
     s->module = VK_NULL_HANDLE;
     s->type = SHADER_TYPE_UNDEFINED;
     s->bindings_size = 0;
     s->render_params_size = 0;
 }
 
-bool init_shader_from_file(shader *s, const char *name, const char *filepath) {
+bool init_shader_from_file(shader *s, shader_instance_type instance, const char *name, const char *filepath) {
     init_shader(s);
 
     bool success = string_copy(s->name, MAX_SHADER_NAME_SIZE, name);
@@ -107,12 +113,15 @@ bool init_shader_from_file(shader *s, const char *name, const char *filepath) {
         return false;
     }
 
+    s->instance = instance;
+
     char shader_extension[MAX_PATH_LENGTH];
     success = extract_extension(shader_extension, filepath, 1);
     if (!success) {
         log_error("Unable to extract shader extension from path: %s", filepath);
         return false;
     }
+
     shader_type t = extension_to_shader_type(shader_extension);
     if (t == SHADER_TYPE_UNDEFINED) {
         log_error("Invalid shader extension: %s", shader_extension);
