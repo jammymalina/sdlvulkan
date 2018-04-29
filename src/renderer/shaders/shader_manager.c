@@ -11,6 +11,20 @@
 
 render_program_manager ren_pm;
 
+void init_render_program(render_program *prog) {
+    string_copy(prog->name, MAX_SHADER_NAME_SIZE, "");
+
+    prog->shader_indices.vert = -1;
+    prog->shader_indices.frag = -1;
+    prog->shader_indices.geom = -1;
+    prog->shader_indices.tesc = -1;
+    prog->shader_indices.tese = -1;
+    prog->shader_indices.comp = -1;
+
+    prog->pipeline_layout = VK_NULL_HANDLE;
+    prog->descriptor_set_layout = VK_NULL_HANDLE;
+}
+
 static bool add_shader_to_render_program_manager(render_program_manager *m, shader_instance_type instance,
     const char *name, const char *filepath)
 {
@@ -36,7 +50,7 @@ static bool create_descriptor_set_layout(render_program *rp) {
     return true;
 }
 
-bool init_render_program_manager(render_program_manager *m) {
+static bool init_shaders(render_program_manager *m) {
     m->shaders_size = 0;
     m->shaders = mem_alloc(MAX_SHADERS * sizeof(shader));
     CHECK_ALLOC(m->shaders, "Allocation fail");
@@ -90,6 +104,46 @@ bool init_render_program_manager(render_program_manager *m) {
     }
 
     return success;
+}
+
+static bool init_render_programs(render_program_manager *m) {
+    bool success = true;
+
+    const static render_program_config render_program_list[] = RENDER_PROGRAM_LIST;
+    size_t n = sizeof(render_program_list) / sizeof(render_program_config);
+
+    for (size_t i = 0; i < n && success; i++) {
+        render_program prog;
+        init_render_program(&prog);
+    }
+
+    return success;
+}
+
+bool init_render_program_manager(render_program_manager *m) {
+    bool success = init_shaders(m) &&
+        init_render_programs(m);
+
+    return success;
+}
+
+int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
+    shader_type type)
+{
+    if (instance_type == SHADER_INSTANCE_UNDEFINED || type == SHADER_TYPE_UNDEFINED) {
+        log_warning("Searching for undefined shader, instance: %d, type: %d", instance_type, type);
+        return -1;
+    }
+
+    for (int i = 0; i < m->shaders_size; i++) {
+        const shader *s = &m->shaders[i];
+        if (s->instance == instance_type && s->type == type) {
+            return i;
+        }
+    }
+
+    log_warning("Unable to find a shader instance: %d, type: %d", instance_type, type);
+    return -1;
 }
 
 void destroy_render_program_manager(render_program_manager *m) {

@@ -12,7 +12,7 @@
 #ifndef RENDER_PROGRAM_LIST
 #define RENDER_PROGRAM_LIST {                    \
     {                                            \
-        .instance = RENDER_PROGRAM_TEST,         \
+        .instance = RENDER_PROGRAM_INTANCE_TEST, \
         .shader_instances = {                    \
             vert: SHADER_INSTANCE_TEST,          \
             frag: SHADER_INSTANCE_TEST,          \
@@ -23,5 +23,4 @@
         }                                        \
     }                                            \
 }
-
 #endif // RENDER_PROGRAM_LIST

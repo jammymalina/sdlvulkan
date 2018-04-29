@@ -14,6 +14,24 @@ typedef struct pipeline_state {
     VkPipeline pipeline;
 } pipeline_state;
 
+typedef enum render_program_instance_type {
+    RENDER_PROGRAM_INTANCE_UNDEFINED = -1,
+    RENDER_PROGRAM_INTANCE_TEST,
+    RENDER_PROGRAM_INTANCES_TOTAL
+} render_program_instance_type;
+
+typedef struct render_program_config {
+    render_program_instance_type instance;
+    struct {
+        shader_instance_type vert;
+        shader_instance_type frag;
+        shader_instance_type geom;
+        shader_instance_type tesc;
+        shader_instance_type tese;
+        shader_instance_type comp;
+    } shader_instances;
+} render_program_config;
+
 typedef struct render_program {
     char name[MAX_SHADER_NAME_SIZE];
     struct {
@@ -33,6 +51,9 @@ typedef struct render_program_manager {
 
     shader *shaders;
     size_t shaders_size;
+
+    render_program *programs;
+    size_t programs_size;
 } render_program_manager;
 
 static inline void init_pipeline_state(pipeline_state *pipe_state) {
@@ -40,7 +61,11 @@ static inline void init_pipeline_state(pipeline_state *pipe_state) {
     pipe_state->pipeline = VK_NULL_HANDLE;
 }
 
+void init_render_program(render_program *prog);
+
 bool init_render_program_manager(render_program_manager *m);
+int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
+    shader_type type);
 void destroy_render_program_manager(render_program_manager *m);
 
 extern render_program_manager ren_pm;
