@@ -7,6 +7,7 @@
 #include "../../vulkan/context.h"
 #include "../../vulkan/tools/tools.h"
 #include "../../vulkan/functions/functions.h"
+#include "../render_state.h"
 
 render_program_manager ren_pm;
 
