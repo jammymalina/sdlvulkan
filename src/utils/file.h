@@ -19,7 +19,7 @@
 
 size_t get_file_size_bytes(FILE *file);
 size_t read_binary_file(const char *filepath, void **data);
-bool path_resolve(char dest[MAX_PATH_LENGTH], const char *directory, const char *filepath);
+bool path_resolve(char dest[MAX_PATH_LENGTH], const char *directory, ...);
 bool extract_extension(char dest[MAX_PATH_LENGTH], const char *filepath, int n);
 
 extern char dirname[MAX_PATH_LENGTH];

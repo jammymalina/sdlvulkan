@@ -32,6 +32,9 @@ bool string_equal(const char *str1, const char *str2) {
 }
 
 bool string_append(char *dest, size_t max_dest_length, const char *src) {
+    if (is_empty_string(src)) {
+        return true;
+    }
     if (max_dest_length == 0) {
         return false;
     }
@@ -39,18 +42,8 @@ bool string_append(char *dest, size_t max_dest_length, const char *src) {
     size_t i, j;
     for (i = 0; dest[i] != '\0' && i < max_dest_length - 1; i++);
 
-    if (i >= max_dest_length - 1) {
-        dest[max_dest_length - 1] = '\0';
-        return false;
-    }
-
     for (j = 0; src[j] != '\0' && i < max_dest_length - 1; j++, i++) {
         dest[i + j] = src[j];
-    }
-
-    if (i >= max_dest_length - 1) {
-        dest[max_dest_length - 1] = '\0';
-        return false;
     }
     dest[i] = '\0';
 
