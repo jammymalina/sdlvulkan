@@ -3,8 +3,7 @@
     {                                            \
         .instance = SHADER_INSTANCE_TEST,        \
         .name = "test", .directory = "basic",    \
-        .type_bits = SHADER_TYPE_GROUP_GRAPHICS, \
-        .vertex_layout = VERTEX_LAYOUT_DRAW_VERT \
+        .type_bits = SHADER_TYPE_GROUP_GRAPHICS  \
     }                                            \
 }
 #endif // SHADER_LIST
@@ -20,7 +19,8 @@
             tesc: SHADER_INSTANCE_UNDEFINED,     \
             tese: SHADER_INSTANCE_UNDEFINED,     \
             comp: SHADER_INSTANCE_UNDEFINED      \
-        }                                        \
+        },                                       \
+        .vertex_layout = VERTEX_LAYOUT_DRAW_VERT \
     }                                            \
 }
 #endif // RENDER_PROGRAM_LIST

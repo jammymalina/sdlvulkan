@@ -47,6 +47,14 @@ static bool add_shader_to_render_program_manager(render_program_manager *m, shad
 }
 
 static bool create_descriptor_set_layout(render_program *rp) {
+    VkDescriptorSetLayoutCreateInfo descriptor_set_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .bindingCount = 0,
+        .pBindings = NULL
+    };
+    vk_CreateDescriptorSetLayout(context.device, &descriptor_set_info, NULL, &rp->descriptor_set_layout);
     return true;
 }
 

@@ -8,6 +8,7 @@
 #include "./shader.h"
 
 #define MAX_SHADERS 64
+#define MAX_RENDER_PROGRAMS 32
 
 typedef struct pipeline_state {
     uint64_t state_bits;
@@ -20,6 +21,12 @@ typedef enum render_program_instance_type {
     RENDER_PROGRAM_INTANCES_TOTAL
 } render_program_instance_type;
 
+typedef enum vertex_layout_type {
+	VERTEX_LAYOUT_UNKNOWN = -1,
+	VERTEX_LAYOUT_DRAW_VERT,
+	VERTEX_LAYOUTS_TOTAL
+} vertex_layout_type;
+
 typedef struct render_program_config {
     render_program_instance_type instance;
     struct {
@@ -30,6 +37,7 @@ typedef struct render_program_config {
         shader_instance_type tese;
         shader_instance_type comp;
     } shader_instances;
+    vertex_layout_type vertex_layout;
 } render_program_config;
 
 typedef struct render_program {

@@ -12,12 +12,6 @@
 #define MAX_SHADER_RENDER_PARAMS 32
 #define MAX_SHADER_BINDINGS_SIZE 32
 
-typedef enum vertex_layout_type {
-	VERTEX_LAYOUT_UNKNOWN = -1,
-	VERTEX_LAYOUT_DRAW_VERT,
-	VERTEX_LAYOUTS_TOTAL
-} vertex_layout_type;
-
 typedef enum shader_type {
     SHADER_TYPE_VERTEX    =  1,
     SHADER_TYPE_FRAGMENT  =  2,
@@ -41,7 +35,6 @@ typedef struct shader_config {
     char *name;
     char *directory;
     uint32_t type_bits;
-    vertex_layout_type vertex_layout;
 } shader_config;
 
 typedef enum render_param {
