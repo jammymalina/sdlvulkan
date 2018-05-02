@@ -7,6 +7,17 @@
 #include "../../vulkan/functions/functions.h"
 #include "../../vulkan/tools/tools.h"
 
+VkDescriptorType get_descriptor_type(shader_binding type) {
+    switch (type) {
+        case BINDING_TYPE_UNIFORM_BUFFER:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        case BINDING_TYPE_SAMPLER:
+            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        default:
+            return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+    }
+}
+
 bool shader_resolve_path(char dest[MAX_PATH_LENGTH], const char *name, const char *folder, shader_type type) {
     string_copy(dest, MAX_PATH_LENGTH, "");
     if (type == SHADER_TYPE_UNDEFINED) {

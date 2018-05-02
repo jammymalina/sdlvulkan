@@ -61,6 +61,8 @@ typedef struct shader {
     size_t render_params_size;
 } shader;
 
+VkDescriptorType get_descriptor_type(shader_binding type);
+
 bool shader_resolve_path(char dest[MAX_PATH_LENGTH], const char *name, const char *folder, shader_type type);
 
 shader_type extension_to_shader_type(const char *extension);

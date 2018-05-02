@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include "./shader.h"
 
+#define SHADER_TYPES_COUNT 6
 #define MAX_SHADERS 64
 #define MAX_RENDER_PROGRAMS 32
 
@@ -70,6 +71,7 @@ static inline void init_pipeline_state(pipeline_state *pipe_state) {
 }
 
 void init_render_program(render_program *prog);
+uint32_t get_shader_type_bits_render_program(render_program *prog);
 
 bool init_render_program_manager(render_program_manager *m);
 int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
