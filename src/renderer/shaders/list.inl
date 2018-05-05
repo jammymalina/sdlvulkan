@@ -11,6 +11,7 @@
 #ifndef RENDER_PROGRAM_LIST
 #define RENDER_PROGRAM_LIST {                    \
     {                                            \
+        .name = "test",                          \
         .instance = RENDER_PROGRAM_INTANCE_TEST, \
         .shader_instances = {                    \
             vert: SHADER_INSTANCE_TEST,          \

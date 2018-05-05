@@ -14,38 +14,6 @@ render_program_manager ren_pm;
 const static shader_type shader_types[SHADER_TYPES_COUNT] = { SHADER_TYPE_VERTEX, SHADER_TYPE_FRAGMENT,
     SHADER_TYPE_TESS_CTRL, SHADER_TYPE_TESS_EVAL, SHADER_TYPE_GEOMETRY, SHADER_TYPE_COMPUTE };
 
-void init_render_program(render_program *prog) {
-    string_copy(prog->name, MAX_SHADER_NAME_SIZE, "");
-
-    prog->shader_indices.vert = -1;
-    prog->shader_indices.frag = -1;
-    prog->shader_indices.geom = -1;
-    prog->shader_indices.tesc = -1;
-    prog->shader_indices.tese = -1;
-    prog->shader_indices.comp = -1;
-
-    prog->pipeline_layout = VK_NULL_HANDLE;
-    prog->descriptor_set_layout = VK_NULL_HANDLE;
-}
-
-uint32_t get_shader_type_bits_render_program(render_program *prog) {
-    uint32_t result = 0;
-    if (prog->shader_indices.vert != -1)
-        result += SHADER_TYPE_VERTEX;
-    if (prog->shader_indices.frag != -1)
-        result += SHADER_TYPE_FRAGMENT;
-    if (prog->shader_indices.tesc != -1)
-        result += SHADER_TYPE_TESS_CTRL;
-    if (prog->shader_indices.tese != -1)
-        result += SHADER_TYPE_TESS_EVAL;
-    if (prog->shader_indices.geom != -1)
-        result += SHADER_TYPE_GEOMETRY;
-    if (prog->shader_indices.comp != -1)
-        result += SHADER_TYPE_COMPUTE;
-
-    return result;
-}
-
 static bool add_shader_to_render_program_manager(render_program_manager *m, shader_instance_type instance,
     const char *name, const char *filepath)
 {
@@ -132,10 +100,64 @@ static bool create_descriptor_set_layout(render_program_manager *m, render_progr
         .pBindings = bindings_count == 0 ? NULL : layout_bindings
     };
     CHECK_VK(vk_CreateDescriptorSetLayout(context.device, &descriptor_set_info, NULL, &rp->descriptor_set_layout));
+
     return true;
 }
 
-static bool add_program_to_render_program_manager(render_program_manager *m) {
+static bool create_pipeline_layout(render_program *prog) {
+    VkPipelineLayoutCreateInfo pipeline_layout_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .setLayoutCount = 1,
+        .pSetLayouts = &prog->descriptor_set_layout,
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges = NULL
+    };
+    CHECK_VK(vk_CreatePipelineLayout(context.device, &pipeline_layout_info, NULL, &prog->pipeline_layout));
+
+    return true;
+}
+
+static bool init_render_program_from_config(render_program *prog, const render_program_config *rp_conf,
+    render_program_manager *m)
+{
+    prog->shader_indices.vert = rp_conf->shader_instances.vert != SHADER_INSTANCE_UNDEFINED ?
+        find_shader_instance_program_manager(m, rp_conf->shader_instances.vert, SHADER_TYPE_VERTEX) : -1;
+    prog->shader_indices.frag = rp_conf->shader_instances.frag != SHADER_INSTANCE_UNDEFINED ?
+        find_shader_instance_program_manager(m, rp_conf->shader_instances.frag, SHADER_TYPE_FRAGMENT) : -1;
+    prog->shader_indices.tesc = rp_conf->shader_instances.tesc != SHADER_INSTANCE_UNDEFINED ?
+        find_shader_instance_program_manager(m, rp_conf->shader_instances.tesc, SHADER_TYPE_TESS_CTRL) : -1;
+    prog->shader_indices.tese = rp_conf->shader_instances.tese != SHADER_INSTANCE_UNDEFINED ?
+        find_shader_instance_program_manager(m, rp_conf->shader_instances.tese, SHADER_TYPE_TESS_EVAL) : -1;
+    prog->shader_indices.geom = rp_conf->shader_instances.geom != SHADER_INSTANCE_UNDEFINED ?
+        find_shader_instance_program_manager(m, rp_conf->shader_instances.geom, SHADER_TYPE_GEOMETRY) : -1;
+    prog->shader_indices.comp = rp_conf->shader_instances.comp != SHADER_INSTANCE_UNDEFINED ?
+        find_shader_instance_program_manager(m, rp_conf->shader_instances.comp, SHADER_TYPE_COMPUTE) : -1;
+
+    bool success = string_copy(prog->name, MAX_SHADER_NAME_SIZE, rp_conf->name) &&
+        create_descriptor_set_layout(m, prog) &&
+        create_pipeline_layout(prog);
+
+    return success;
+}
+
+static bool add_program_to_render_program_manager(render_program_manager *m, const render_program_config *rp_conf) {
+    if (m->programs_size >= MAX_RENDER_PROGRAMS) {
+        log_error("Not enough space for another shader program");
+        return false;
+    }
+
+    render_program p;
+    if (!init_render_program_from_config(&p, rp_conf, m)) {
+        log_error("Error while creating render program: %s", rp_conf->name);
+        destroy_render_program(&p);
+        return false;
+    }
+
+    m->programs[m->programs_size] = p;
+    m->programs_size++;
+
     return true;
 }
 
@@ -152,9 +174,53 @@ static bool init_render_programs(render_program_manager *m) {
 
     bool success = true;
     for (size_t i = 0; i < n && success; i++) {
+        success &= add_program_to_render_program_manager(m, &render_program_list[i]);
     }
 
     return success;
+}
+
+uint32_t get_shader_type_bits_render_program(render_program *prog) {
+    uint32_t result = 0;
+    if (prog->shader_indices.vert != -1)
+        result += SHADER_TYPE_VERTEX;
+    if (prog->shader_indices.frag != -1)
+        result += SHADER_TYPE_FRAGMENT;
+    if (prog->shader_indices.tesc != -1)
+        result += SHADER_TYPE_TESS_CTRL;
+    if (prog->shader_indices.tese != -1)
+        result += SHADER_TYPE_TESS_EVAL;
+    if (prog->shader_indices.geom != -1)
+        result += SHADER_TYPE_GEOMETRY;
+    if (prog->shader_indices.comp != -1)
+        result += SHADER_TYPE_COMPUTE;
+
+    return result;
+}
+
+void init_render_program(render_program *prog) {
+    string_copy(prog->name, MAX_SHADER_NAME_SIZE, "");
+
+    prog->shader_indices.vert = -1;
+    prog->shader_indices.frag = -1;
+    prog->shader_indices.geom = -1;
+    prog->shader_indices.tesc = -1;
+    prog->shader_indices.tese = -1;
+    prog->shader_indices.comp = -1;
+
+    prog->pipeline_layout = VK_NULL_HANDLE;
+    prog->descriptor_set_layout = VK_NULL_HANDLE;
+}
+
+void destroy_render_program(render_program *prog) {
+    if (prog->pipeline_layout) {
+        vk_DestroyPipelineLayout(context.device, prog->pipeline_layout, NULL);
+        prog->pipeline_layout = VK_NULL_HANDLE;
+    }
+    if (prog->descriptor_set_layout) {
+        vk_DestroyDescriptorSetLayout(context.device, prog->descriptor_set_layout, NULL);
+        prog->descriptor_set_layout = VK_NULL_HANDLE;
+    }
 }
 
 bool init_render_program_manager(render_program_manager *m) {
@@ -184,8 +250,16 @@ int find_shader_instance_program_manager(render_program_manager *m, shader_insta
 }
 
 void destroy_render_program_manager(render_program_manager *m) {
+    for (size_t i = 0; i < m->programs_size; i++) {
+        destroy_render_program(&m->programs[i]);
+    }
     for (size_t i = 0; i < m->shaders_size; i++) {
         destroy_shader(&m->shaders[i]);
+    }
+
+    if (m->programs) {
+        mem_free(m->programs);
+        m->programs = NULL;
     }
 
     if (m->shaders) {

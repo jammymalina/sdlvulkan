@@ -29,6 +29,7 @@ typedef enum vertex_layout_type {
 } vertex_layout_type;
 
 typedef struct render_program_config {
+    char *name;
     render_program_instance_type instance;
     struct {
         shader_instance_type vert;
@@ -72,6 +73,7 @@ static inline void init_pipeline_state(pipeline_state *pipe_state) {
 
 void init_render_program(render_program *prog);
 uint32_t get_shader_type_bits_render_program(render_program *prog);
+void destroy_render_program(render_program *prog);
 
 bool init_render_program_manager(render_program_manager *m);
 int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
