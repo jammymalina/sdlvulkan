@@ -180,6 +180,24 @@ static bool init_render_programs(render_program_manager *m) {
     return success;
 }
 
+static bool create_vertex_descriptions(render_program_manager *m) {
+    VkPipelineVertexInputStateCreateInfo vertex_input_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .vertexBindingDescriptionCount = 0,
+        .pVertexBindingDescriptions = NULL,
+        .vertexAttributeDescriptionCount = 0,
+        .pVertexAttributeDescriptions = NULL
+    };
+
+    return true;
+}
+
+static bool create_descriptor_pools() {
+    return true;
+}
+
 uint32_t get_shader_type_bits_render_program(render_program *prog) {
     uint32_t result = 0;
     if (prog->shader_indices.vert != -1)
