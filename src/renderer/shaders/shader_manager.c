@@ -3,9 +3,11 @@
 #include "../../logger/logger.h"
 #include "../../string/string.h"
 #include "../../utils/heap.h"
+#include "../../vulkan/gpu_info.h"
 #include "../../vulkan/context.h"
 #include "../../vulkan/tools/tools.h"
 #include "../../vulkan/functions/functions.h"
+#include "../config.h"
 #include "../render_state.h"
 #include "./list.inl"
 
@@ -194,7 +196,35 @@ static bool create_vertex_descriptions(render_program_manager *m) {
     return true;
 }
 
-static bool create_descriptor_pools() {
+static bool create_descriptor_pools(render_program_manager *m) {
+    const gpu_info *gpu = &context.gpus[context.selected_gpu];
+    uint32_t max_uniform_descriptors = gpu->props.limits.maxDescriptorSetUniformBuffers;
+    uint32_t max_sample_descriptors = gpu->props.limits.maxDescriptorSetSampledImages;
+    VkDescriptorPoolSize pool_sizes[] = {
+        {
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = max_uniform_descriptors
+        },
+        {
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = max_sample_descriptors
+        }
+    };
+    const size_t num_sizes = sizeof(pool_sizes) / sizeof(VkDescriptorPoolSize);
+
+    VkDescriptorPoolCreateInfo pool_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .maxSets = MAX_DECRIPTOR_SETS,
+        .poolSizeCount = num_sizes,
+        .pPoolSizes = pool_sizes
+    };
+
+    for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+        CHECK_VK(vk_CreateDescriptorPool(context.device, &pool_info, NULL, &m->descriptor_pools[i]));
+    }
+
     return true;
 }
 
@@ -242,8 +272,12 @@ void destroy_render_program(render_program *prog) {
 }
 
 bool init_render_program_manager(render_program_manager *m) {
+    m->current_frame = 0;
+    m->current_descriptor_set = 0;
+    m->current_parameter_buffer_offset = 0;
     bool success = init_shaders(m) &&
-        init_render_programs(m);
+        init_render_programs(m) &&
+        create_descriptor_pools(m);
 
     return success;
 }
@@ -267,6 +301,19 @@ int find_shader_instance_program_manager(render_program_manager *m, shader_insta
     return -1;
 }
 
+bool start_frame_render_program_manager(render_program_manager *m) {
+    m->current_frame = (m->current_frame + 1) % NUM_FRAME_DATA;
+    m->current_descriptor_set = 0;
+
+    CHECK_VK(vk_ResetDescriptorPool(context.device, m->descriptor_pools[m->current_frame], 0));
+
+    return true;
+}
+
+bool end_frame_render_program_manager(render_program_manager *m) {
+    return true;
+}
+
 void destroy_render_program_manager(render_program_manager *m) {
     for (size_t i = 0; i < m->programs_size; i++) {
         destroy_render_program(&m->programs[i]);
@@ -288,6 +335,14 @@ void destroy_render_program_manager(render_program_manager *m) {
 
 bool init_ren_pm() {
     return init_render_program_manager(&ren_pm);
+}
+
+bool start_frame_ren_pm() {
+    return start_frame_render_program_manager(&ren_pm);
+}
+
+bool end_frame_ren_pm() {
+    return end_frame_render_program_manager(&ren_pm);
 }
 
 void destroy_ren_pm() {
