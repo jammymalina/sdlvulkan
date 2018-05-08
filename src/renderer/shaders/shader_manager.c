@@ -228,6 +228,10 @@ static bool create_descriptor_pools(render_program_manager *m) {
     return true;
 }
 
+static bool create_graphics_pipeline() {
+    return true;
+}
+
 uint32_t get_shader_type_bits_render_program(render_program *prog) {
     uint32_t result = 0;
     if (prog->shader_indices.vert != -1)
@@ -304,13 +308,10 @@ int find_shader_instance_program_manager(render_program_manager *m, shader_insta
 bool start_frame_render_program_manager(render_program_manager *m) {
     m->current_frame = (m->current_frame + 1) % NUM_FRAME_DATA;
     m->current_descriptor_set = 0;
+    m->current_parameter_buffer_offset = 0;
 
     CHECK_VK(vk_ResetDescriptorPool(context.device, m->descriptor_pools[m->current_frame], 0));
 
-    return true;
-}
-
-bool end_frame_render_program_manager(render_program_manager *m) {
     return true;
 }
 
@@ -339,10 +340,6 @@ bool init_ren_pm() {
 
 bool start_frame_ren_pm() {
     return start_frame_render_program_manager(&ren_pm);
-}
-
-bool end_frame_ren_pm() {
-    return end_frame_render_program_manager(&ren_pm);
 }
 
 void destroy_ren_pm() {

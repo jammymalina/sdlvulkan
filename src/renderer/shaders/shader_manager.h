@@ -85,14 +85,12 @@ bool init_render_program_manager(render_program_manager *m);
 int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
     shader_type type);
 bool start_frame_render_program_manager(render_program_manager *m);
-bool end_frame_render_program_manager(render_program_manager *m);
 void destroy_render_program_manager(render_program_manager *m);
 
 extern render_program_manager ren_pm;
 
 bool init_ren_pm();
 bool start_frame_ren_pm();
-bool end_frame_ren_pm();
 void destroy_ren_pm();
 
 #endif // SHADER_MANAGER_H
