@@ -7,15 +7,12 @@
 #include <stdbool.h>
 #include "./shader.h"
 #include "../../vulkan/config.h"
+#include "./pipeline_state.h"
 
 #define SHADER_TYPES_COUNT 6
 #define MAX_SHADERS 64
 #define MAX_RENDER_PROGRAMS 32
-
-typedef struct pipeline_state {
-    uint64_t state_bits;
-    VkPipeline pipeline;
-} pipeline_state;
+#define MAX_PIPELINE_CACHE_SIZE 64
 
 typedef enum render_program_instance_type {
     RENDER_PROGRAM_INTANCE_UNDEFINED = -1,
@@ -53,8 +50,11 @@ typedef struct render_program {
         int tese;
         int comp;
     } shader_indices;
+
     VkPipelineLayout pipeline_layout;
     VkDescriptorSetLayout descriptor_set_layout;
+
+    pipeline_state pipeline_cache[MAX_PIPELINE_CACHE_SIZE];
 } render_program;
 
 typedef struct render_program_manager {
@@ -71,11 +71,6 @@ typedef struct render_program_manager {
     size_t current_descriptor_set;
     size_t current_parameter_buffer_offset;
 } render_program_manager;
-
-static inline void init_pipeline_state(pipeline_state *pipe_state) {
-    pipe_state->state_bits = 0;
-    pipe_state->pipeline = VK_NULL_HANDLE;
-}
 
 void init_render_program(render_program *prog);
 uint32_t get_shader_type_bits_render_program(render_program *prog);
