@@ -42,7 +42,7 @@ typedef struct vk_block {
     uint32_t memory_type_index;
     vk_memory_usage_type usage;
     VkDeviceMemory device_memory;
-    VkDeviceSize size; 
+    VkDeviceSize size;
     VkDeviceSize allocated;
     byte *data;
 } vk_block;
@@ -82,7 +82,7 @@ uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usage_type 
 
 void init_vk_block(vk_block *block, uint32_t memory_type_index, VkDeviceSize size, vk_memory_usage_type usage);
 bool init_vk_block_memory(vk_block *block);
-bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceSize granularity, 
+bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceSize granularity,
     vk_allocation_type alloc_type, vk_allocation *allocation);
 void free_allocation_vk_block(vk_block *block, vk_allocation *allocation);
 void destroy_vk_block(vk_block *block);
@@ -91,8 +91,8 @@ void print_vk_block(vk_block *block);
 // ALLOCATOR
 
 bool init_vk_allocator(vk_mem_allocator *allocator);
-bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result, 
-    uint32_t size, uint32_t align, uint32_t memory_type_bits, 
+bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result,
+    uint32_t size, uint32_t align, uint32_t memory_type_bits,
     vk_memory_usage_type usage, vk_allocation_type alloc_type);
 void empty_garbage_vk_allocator(vk_mem_allocator *allocator);
 bool free_allocation_vk_allocator(vk_mem_allocator *allocator, vk_allocation *allocation);
@@ -100,8 +100,9 @@ void destroy_vk_allocator(vk_mem_allocator *allocator);
 void print_vk_allocator(vk_mem_allocator *allocator);
 
 extern vk_mem_allocator vk_allocator;
+
 bool vk_init_allocator();
-bool vk_allocate(vk_allocation *result, uint32_t size, uint32_t align, uint32_t memory_type_bits, 
+bool vk_allocate(vk_allocation *result, uint32_t size, uint32_t align, uint32_t memory_type_bits,
     vk_memory_usage_type usage, vk_allocation_type alloc_type);
 void vk_empty_garbage();
 bool vk_free_allocation(vk_allocation *allocation);

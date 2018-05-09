@@ -302,18 +302,29 @@ VkPipelineDepthStencilStateCreateInfo get_depth_stencil_info_from_pipeline_bits(
             break;
     }
 
-    VkStencilOpState default_stencil_op_state = {
-        .failOp = VK_STENCIL_OP_KEEP,
-        .passOp = VK_STENCIL_OP_KEEP,
-        .depthFailOp = VK_STENCIL_OP_KEEP,
-        .compareOp = VK_COMPARE_OP_NEVER,
-        .compareMask = 0,
-        .writeMask = 0,
-        .reference = 0
-    };
-
     uint32_t ref =  (((uint32_t) (state_bits & RST_STENCIL_FUNC_REF_BITS)) >> RST_STENCIL_FUNC_REF_SHIFT);
     uint32_t mask = (((uint32_t) (state_bits & RST_STENCIL_FUNC_MASK_BITS)) >> RST_STENCIL_FUNC_MASK_SHIFT);
+
+    VkStencilOpState front_stencil = get_stecil_op_state(state_bits);
+    front_stencil.writeMask = 0xFFFFFFFF;
+    front_stencil.compareOp = stencil_compare_op;
+    front_stencil.compareMask = mask;
+    front_stencil.reference = ref;
+    VkStencilOpState back_stencil = front_stencil;
+
+    if (state_bits & RST_SEPARATE_STENCIL) {
+        front_stencil = get_stecil_op_state(state_bits & RST_STENCIL_FRONT_OPS);
+        front_stencil.writeMask = 0xFFFFFFFF;
+        front_stencil.compareOp = stencil_compare_op;
+        front_stencil.compareMask = mask;
+        front_stencil.reference = ref;
+
+        back_stencil = get_stecil_op_state((state_bits & RST_STENCIL_BACK_OPS) >> 12);
+        back_stencil.writeMask = 0xFFFFFFFF;
+        back_stencil.compareOp = stencil_compare_op;
+        back_stencil.compareMask = mask;
+        back_stencil.reference = ref;
+    }
 
     VkPipelineDepthStencilStateCreateInfo depth_stencil_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -324,11 +335,43 @@ VkPipelineDepthStencilStateCreateInfo get_depth_stencil_info_from_pipeline_bits(
         .depthCompareOp = depth_compare_op,
         .depthBoundsTestEnable = gpu->features.depthBounds && (state_bits & RST_DEPTHMASK) == 0,
         .stencilTestEnable =  (state_bits & (RST_STENCIL_FUNC_BITS | RST_STENCIL_OP_BITS)) != 0,
-        .front = 0,
-        .back = 0,
+        .front = front_stencil,
+        .back = back_stencil,
         .minDepthBounds = gpu->features.depthBounds ? 0.0f : 0,
         .maxDepthBounds = gpu->features.depthBounds ? 1.0f : 0
     };
 
     return depth_stencil_info;
+}
+
+VkPipelineMultisampleStateCreateInfo get_multisample_info() {
+    VkPipelineMultisampleStateCreateInfo multisample_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .rasterizationSamples = context.sample_count,
+        .sampleShadingEnable = context.supersampling,
+        .minSampleShading = context.supersampling ? 1.0f : 0,
+        .pSampleMask = NULL,
+        .alphaToCoverageEnable = VK_FALSE,
+        .alphaToOneEnable = VK_FALSE
+    };
+
+    return multisample_info;
+}
+
+VkPipelineDynamicStateCreateInfo get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
+    uint64_t state_bits)
+{
+    gpu_info *gpu = &context.gpus[context.selected_gpu];
+
+    size_t i = 0;
+    dest[i++] = VK_DYNAMIC_STATE_SCISSOR;
+    dest[i++] = VK_DYNAMIC_STATE_VIEWPORT;
+    if (state_bits & RST_POLYGON_OFFSET) {
+        dest[i++] = VK_DYNAMIC_STATE_DEPTH_BIAS;
+    }
+    if (gpu->features.depthBounds && (state_bits & RST_DEPTH_TEST_MASK)) {
+        dest[i++] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;
+    }
 }

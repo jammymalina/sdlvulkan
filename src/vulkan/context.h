@@ -35,6 +35,8 @@ typedef struct vk_context {
     VkSwapchainKHR swapchain;
     VkImage swapchain_images[NUM_FRAME_DATA];
     VkImageView swapchain_views[NUM_FRAME_DATA];
+
+    bool supersampling;
     VkSampleCountFlagBits sample_count;
 
     vk_image depth_image;

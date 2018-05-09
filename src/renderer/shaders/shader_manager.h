@@ -38,6 +38,7 @@ typedef struct render_program_config {
         shader_instance_type comp;
     } shader_instances;
     vertex_layout_type vertex_layout;
+    uint64_t preconfigured_pipelines[MAX_PIPELINE_CACHE_SIZE + 1];
 } render_program_config;
 
 typedef struct render_program {

@@ -35,6 +35,7 @@ void init_vk_context(vk_context *ctx) {
     ctx->render_pass = VK_NULL_HANDLE;
     ctx->gpus = NULL;
     ctx->gpus_size = 0;
+    ctx->supersampling = false;
     ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;
 }
 
