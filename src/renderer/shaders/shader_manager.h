@@ -9,26 +9,28 @@
 #include "../../vulkan/config.h"
 #include "./pipeline_state.h"
 
-#define SHADER_TYPES_COUNT 6
 #define MAX_SHADERS 64
 #define MAX_RENDER_PROGRAMS 32
 #define MAX_PIPELINE_CACHE_SIZE 64
+#define MAX_VERTEX_BINDING_DESCRIPTORS 8
+#define MAX_VERTEX_ATTRIBUTE_BINDING_DESCRIPTORS 8
 
-typedef enum render_program_instance_type {
-    RENDER_PROGRAM_INTANCE_UNDEFINED = -1,
+typedef enum render_program_instance {
+    RENDER_PROGRAM_INSTANCE_UNDEFINED = -1,
     RENDER_PROGRAM_INTANCE_TEST,
     RENDER_PROGRAM_INTANCES_TOTAL
-} render_program_instance_type;
+} render_program_instance;
 
 typedef enum vertex_layout_type {
 	VERTEX_LAYOUT_UNKNOWN = -1,
-	VERTEX_LAYOUT_DRAW_VERT,
+    VERTEX_LAYOUT_NO_VERTICES,
+	VERTEX_LAYOUT_POS_NOR,
 	VERTEX_LAYOUTS_TOTAL
 } vertex_layout_type;
 
 typedef struct render_program_config {
     char *name;
-    render_program_instance_type instance;
+    render_program_instance instance;
     struct {
         shader_instance_type vert;
         shader_instance_type frag;
@@ -43,6 +45,8 @@ typedef struct render_program_config {
 
 typedef struct render_program {
     char name[MAX_SHADER_NAME_SIZE];
+    render_program_instance instance;
+
     struct {
         int vert;
         int frag;
@@ -52,10 +56,13 @@ typedef struct render_program {
         int comp;
     } shader_indices;
 
+    vertex_layout_type vertex_layout;
+
     VkPipelineLayout pipeline_layout;
     VkDescriptorSetLayout descriptor_set_layout;
 
     pipeline_state pipeline_cache[MAX_PIPELINE_CACHE_SIZE];
+    size_t pipeline_cache_size;
 } render_program;
 
 typedef struct render_program_manager {
@@ -80,6 +87,7 @@ void destroy_render_program(render_program *prog);
 bool init_render_program_manager(render_program_manager *m);
 int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
     shader_type type);
+int find_render_program_instance_program_manager(render_program_manager *m, render_program_instance instance);
 bool start_frame_render_program_manager(render_program_manager *m);
 void destroy_render_program_manager(render_program_manager *m);
 

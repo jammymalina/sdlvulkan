@@ -13,6 +13,18 @@
 
 render_program_manager ren_pm;
 
+typedef struct vertex_layout {
+	VkPipelineVertexInputStateCreateInfo input_state;
+
+	VkVertexInputBindingDescription binding_desc[MAX_VERTEX_BINDING_DESCRIPTORS];
+    size_t binding_desc_size;
+
+	VkVertexInputAttributeDescription attribute_desc[MAX_VERTEX_ATTRIBUTE_BINDING_DESCRIPTORS];
+    size_t attribute_desc_size;
+} vertex_layout;
+
+static vertex_layout vertex_layouts[VERTEX_LAYOUTS_TOTAL];
+
 const static shader_type shader_types[SHADER_TYPES_COUNT] = { SHADER_TYPE_VERTEX, SHADER_TYPE_FRAGMENT,
     SHADER_TYPE_TESS_CTRL, SHADER_TYPE_TESS_EVAL, SHADER_TYPE_GEOMETRY, SHADER_TYPE_COMPUTE };
 
@@ -121,9 +133,84 @@ static bool create_pipeline_layout(render_program *prog) {
     return true;
 }
 
+static bool create_pipeline(VkPipeline *pipeline, uint64_t state_bits, render_program_manager *m, render_program *prog) {
+    vertex_layout *layout = &vertex_layouts[prog->vertex_layout];
+
+    // vertex input
+    VkPipelineVertexInputStateCreateInfo vertex_input_state = layout->input_state;
+    vertex_input_state.vertexBindingDescriptionCount = layout->binding_desc_size;
+	vertex_input_state.pVertexBindingDescriptions = layout->binding_desc;
+	vertex_input_state.vertexAttributeDescriptionCount = layout->attribute_desc_size;
+	vertex_input_state.pVertexAttributeDescriptions = layout->attribute_desc;
+
+    // input assembly
+
+
+    return true;
+}
+
+static bool get_pipeline_render_program(pipeline_state *dest, render_program *prog, uint64_t state_bits,
+    render_program_manager *m)
+{
+    for (size_t i = 0; i < prog->pipeline_cache_size; i++) {
+        pipeline_state *ps = &prog->pipeline_cache[i];
+        if (ps->state_bits == state_bits) {
+            ps->counter++;
+            copy_pipeline_state(dest, ps);
+            return true;
+        }
+    }
+
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    bool success = create_pipeline(&pipeline, state_bits, m, prog);
+    if (!success) {
+        log_error("Unable to create pipeline for render program %s", prog->name);
+        return false;
+    }
+
+    size_t index = 0;
+    if (prog->pipeline_cache_size >= MAX_PIPELINE_CACHE_SIZE) {
+        log_warning("Pipeline cache for render program %s is full", prog->name);
+        size_t min_used = prog->pipeline_cache[index].counter;
+        for (size_t i = 1; i < prog->pipeline_cache_size; i++) {
+            if (prog->pipeline_cache[i].counter < min_used) {
+                min_used = prog->pipeline_cache[i].counter;
+                index = i;
+            }
+        }
+        if (prog->pipeline_cache[index].pipeline) {
+            vk_DestroyPipeline(context.device, prog->pipeline_cache[index].pipeline, NULL);
+        }
+    } else {
+        index = prog->pipeline_cache_size;
+        prog->pipeline_cache_size++;
+    }
+    prog->pipeline_cache[index].pipeline = pipeline;
+    prog->pipeline_cache[index].counter = 0;
+    prog->pipeline_cache[index].state_bits = state_bits;
+
+    copy_pipeline_state(dest, &prog->pipeline_cache[index]);
+
+    return true;
+}
+
+static bool get_pipeline_render_program_instance(pipeline_state *dest, render_program_instance instance,
+    uint64_t state_bits, render_program_manager *m)
+{
+    int index = find_render_program_instance_program_manager(m, instance);
+    if (index == -1) {
+        return false;
+    }
+    render_program *prog = &m->programs[index];
+
+    return get_pipeline_render_program(dest, prog, state_bits, m);
+}
+
 static bool init_render_program_from_config(render_program *prog, const render_program_config *rp_conf,
     render_program_manager *m)
 {
+    prog->instance = rp_conf->instance;
+
     prog->shader_indices.vert = rp_conf->shader_instances.vert != SHADER_INSTANCE_UNDEFINED ?
         find_shader_instance_program_manager(m, rp_conf->shader_instances.vert, SHADER_TYPE_VERTEX) : -1;
     prog->shader_indices.frag = rp_conf->shader_instances.frag != SHADER_INSTANCE_UNDEFINED ?
@@ -137,9 +224,16 @@ static bool init_render_program_from_config(render_program *prog, const render_p
     prog->shader_indices.comp = rp_conf->shader_instances.comp != SHADER_INSTANCE_UNDEFINED ?
         find_shader_instance_program_manager(m, rp_conf->shader_instances.comp, SHADER_TYPE_COMPUTE) : -1;
 
+    prog->vertex_layout = rp_conf->vertex_layout;
+
     bool success = string_copy(prog->name, MAX_SHADER_NAME_SIZE, rp_conf->name) &&
         create_descriptor_set_layout(m, prog) &&
         create_pipeline_layout(prog);
+
+    pipeline_state tmp;
+    for (size_t i = 1; i < rp_conf->preconfigured_pipelines[0] && success; i++) {
+        success &= get_pipeline_render_program(&tmp, prog, rp_conf->preconfigured_pipelines[i], m);
+    }
 
     return success;
 }
@@ -182,7 +276,7 @@ static bool init_render_programs(render_program_manager *m) {
     return success;
 }
 
-static bool create_vertex_descriptions(render_program_manager *m) {
+static bool create_vertex_descriptions() {
     VkPipelineVertexInputStateCreateInfo vertex_input_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext = NULL,
@@ -192,6 +286,13 @@ static bool create_vertex_descriptions(render_program_manager *m) {
         .vertexAttributeDescriptionCount = 0,
         .pVertexAttributeDescriptions = NULL
     };
+
+    {
+        vertex_layout *layout = &vertex_layouts[VERTEX_LAYOUT_NO_VERTICES];
+        layout->binding_desc_size = 0;
+        layout->attribute_desc_size = 0;
+        layout->input_state = vertex_input_info;
+    }
 
     return true;
 }
@@ -228,10 +329,6 @@ static bool create_descriptor_pools(render_program_manager *m) {
     return true;
 }
 
-static bool create_graphics_pipeline() {
-    return true;
-}
-
 uint32_t get_shader_type_bits_render_program(render_program *prog) {
     uint32_t result = 0;
     if (prog->shader_indices.vert != -1)
@@ -252,6 +349,7 @@ uint32_t get_shader_type_bits_render_program(render_program *prog) {
 
 void init_render_program(render_program *prog) {
     string_copy(prog->name, MAX_SHADER_NAME_SIZE, "");
+    prog->instance = RENDER_PROGRAM_INSTANCE_UNDEFINED;
 
     prog->shader_indices.vert = -1;
     prog->shader_indices.frag = -1;
@@ -260,8 +358,18 @@ void init_render_program(render_program *prog) {
     prog->shader_indices.tese = -1;
     prog->shader_indices.comp = -1;
 
+    prog->vertex_layout = VERTEX_LAYOUT_UNKNOWN;
+
     prog->pipeline_layout = VK_NULL_HANDLE;
     prog->descriptor_set_layout = VK_NULL_HANDLE;
+
+    prog->pipeline_cache_size = 0;
+    for (size_t i = 0; i < MAX_PIPELINE_CACHE_SIZE; i++) {
+        pipeline_state *p = &prog->pipeline_cache[i];
+        p->state_bits = RST_DEFAULT;
+        p->pipeline = VK_NULL_HANDLE;
+        p->counter = 0;
+    }
 }
 
 void destroy_render_program(render_program *prog) {
@@ -273,6 +381,13 @@ void destroy_render_program(render_program *prog) {
         vk_DestroyDescriptorSetLayout(context.device, prog->descriptor_set_layout, NULL);
         prog->descriptor_set_layout = VK_NULL_HANDLE;
     }
+    for (size_t i = 0; i < prog->pipeline_cache_size; i++) {
+        pipeline_state *ps = &prog->pipeline_cache[i];
+        if (ps->pipeline) {
+            vk_DestroyPipeline(context.device, ps->pipeline, NULL);
+            ps->pipeline = VK_NULL_HANDLE;
+        }
+    }
 }
 
 bool init_render_program_manager(render_program_manager *m) {
@@ -281,6 +396,7 @@ bool init_render_program_manager(render_program_manager *m) {
     m->current_parameter_buffer_offset = 0;
     bool success = init_shaders(m) &&
         init_render_programs(m) &&
+        create_vertex_descriptions() &&
         create_descriptor_pools(m);
 
     return success;
@@ -302,6 +418,23 @@ int find_shader_instance_program_manager(render_program_manager *m, shader_insta
     }
 
     log_warning("Unable to find a shader instance: %d, type: %d", instance_type, type);
+    return -1;
+}
+
+int find_render_program_instance_program_manager(render_program_manager *m, render_program_instance instance) {
+    if (instance == RENDER_PROGRAM_INSTANCE_UNDEFINED) {
+        log_warning("Searching for undefined render program, instance: %d", instance);
+        return -1;
+    }
+
+    for (int i = 0; i < m->programs_size; i++) {
+        const render_program *prog = &m->programs[i];
+        if (prog->instance == instance) {
+            return i;
+        }
+    }
+
+    log_warning("Unable to find a render program instance: %d", instance);
     return -1;
 }
 

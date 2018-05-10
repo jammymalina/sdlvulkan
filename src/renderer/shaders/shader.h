@@ -8,6 +8,7 @@
 #include "../../utils/file.h"
 
 #define SHADERS_ROOT_FOLDER "shaders"
+#define SHADER_TYPES_COUNT 6
 #define MAX_SHADER_NAME_SIZE 256
 #define MAX_SHADER_RENDER_PARAMS 32
 #define MAX_SHADER_BINDINGS_SIZE 32

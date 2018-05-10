@@ -161,4 +161,8 @@
 #define RST_KEEP    RST_DEPTH_TEST_MASK;
 #define RST_DEFAULT UINT64_C(0)
 
+// predefined states
+
+#define RST_BASIC_3D (RST_CULL_TWOSIDED)
+
 #endif // RENDER_STATE_H

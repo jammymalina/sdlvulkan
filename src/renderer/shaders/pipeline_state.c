@@ -360,7 +360,7 @@ VkPipelineMultisampleStateCreateInfo get_multisample_info() {
     return multisample_info;
 }
 
-VkPipelineDynamicStateCreateInfo get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
+void get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
     uint64_t state_bits)
 {
     gpu_info *gpu = &context.gpus[context.selected_gpu];
