@@ -211,7 +211,7 @@ static bool create_pipeline(VkPipeline *pipeline, uint64_t state_bits, render_pr
     size_t dynamic_states_size = get_dynamic_states_from_pipeline_bits(dynamic_states, state_bits);
 
     VkPipelineDynamicStateCreateInfo dynamic_info = {
-        .sType = 0,
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .pNext = NULL,
         .flags = 0,
         .dynamicStateCount = dynamic_states_size,
@@ -231,7 +231,7 @@ static bool create_pipeline(VkPipeline *pipeline, uint64_t state_bits, render_pr
 
     // pipeline
     VkGraphicsPipelineCreateInfo pipeline_info = {
-        .sType = 0,
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext = NULL,
         .flags = 0,
         .stageCount = shader_stages_size,
@@ -505,6 +505,9 @@ bool init_render_program_manager(render_program_manager *m) {
     m->current_frame = 0;
     m->current_descriptor_set = 0;
     m->current_parameter_buffer_offset = 0;
+    for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+        m->descriptor_pools[i] = VK_NULL_HANDLE;
+    }
     bool success = init_shaders(m) &&
         init_render_programs(m) &&
         create_vertex_descriptions() &&
@@ -610,6 +613,13 @@ void destroy_render_program_manager(render_program_manager *m) {
     if (m->shaders) {
         mem_free(m->shaders);
         m->shaders = NULL;
+    }
+
+    for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+        if (m->descriptor_pools[i]) {
+            vk_DestroyDescriptorPool(context.device, m->descriptor_pools[i], NULL);
+            m->descriptor_pools[i] = VK_NULL_HANDLE;
+        }
     }
 }
 

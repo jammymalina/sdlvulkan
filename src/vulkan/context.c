@@ -39,7 +39,7 @@ void init_vk_context(vk_context *ctx) {
     ctx->supersampling = false;
     ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;
     ctx->pipeline_cache = VK_NULL_HANDLE;
-    #ifndef DEBUG
+    #ifdef DEBUG
         ctx->debug_callback = VK_NULL_HANDLE;
     #endif
 }
@@ -457,8 +457,8 @@ static bool create_render_pass(vk_context *ctx) {
         .samples        = VK_SAMPLE_COUNT_1_BIT,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp  = 0,
-        .stencilStoreOp = 0,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
         .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     };
@@ -469,8 +469,8 @@ static bool create_render_pass(vk_context *ctx) {
         .samples        = VK_SAMPLE_COUNT_1_BIT,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp  = 0,
-        .stencilStoreOp = 0,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
         .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
     };

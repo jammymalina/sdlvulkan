@@ -8,7 +8,7 @@
 
 static inline VkFormat texture_format_to_vk_format(texture_format format) {
     switch (format) {
-        case FMT_RGBA8: 
+        case FMT_RGBA8:
             return VK_FORMAT_R8G8B8A8_UNORM;
         case FMT_XRGB8:
             return VK_FORMAT_R8G8B8_UNORM;
@@ -105,7 +105,7 @@ void init_image(vk_image *image) {
 }
 
 void create_from_swapchain_image(vk_image *result, VkImage image, VkImageView image_view, VkFormat format,
-    VkExtent2D *extent) 
+    VkExtent2D *extent)
 {
     result->image = image;
     result->view = image_view;
@@ -200,7 +200,7 @@ bool alloc_image(vk_image *image) {
     VkImageCreateInfo image_info = {
         .sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext     = NULL,
-        .flags     = image->props.type == TT_CUBIC ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0,
+        .flags     = (image->props.type == TT_CUBIC ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0),
         .imageType = VK_IMAGE_TYPE_2D,
         .format    = image->internal_format,
         .extent    = {
@@ -233,17 +233,17 @@ bool alloc_image(vk_image *image) {
 
     CHECK_VK(vk_BindImageMemory(context.device, image->image, image->allocation.device_memory,
         image->allocation.offset));
-    
+
     VkImageViewCreateInfo view_info = {
         .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext      = NULL,
         .flags      = 0,
         .image      = image->image,
-        .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-        .format     = image->props.type == TT_CUBIC ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
+        .viewType   = image->props.type == TT_CUBIC ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D,
+        .format     = image->internal_format,
         .components = texture_format_to_component_mapping(image->props.format),
         .subresourceRange = {
-            .aspectMask     = image->props.format == FMT_DEPTH ? 
+            .aspectMask     = image->props.format == FMT_DEPTH ?
                 VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel   = 0,
             .levelCount     = image->props.num_levels,
@@ -258,7 +258,7 @@ bool alloc_image(vk_image *image) {
 }
 
 bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, size_t z,
-    size_t width, size_t height, void *picture, size_t pixel_pitch) 
+    size_t width, size_t height, void *picture, size_t pixel_pitch)
 {
     if (pixel_pitch >= image->props.num_levels) {
         log_error("Invalid pixel pitch, it must be < than the number of levels");
@@ -322,7 +322,7 @@ bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, siz
         }
     };
 
-    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, 
+    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
         NULL, 0, NULL, 1, &barrier);
     vk_CmdCopyBufferToImage(command_buffer, buffer, image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &img_copy);
 
@@ -330,7 +330,7 @@ bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, siz
 	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0, 
+    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0,
         NULL, 0, NULL, 1, &barrier);
 
     image->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

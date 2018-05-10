@@ -227,6 +227,7 @@ void flush_vk_staging_manager(vk_staging_manager *manager) {
 void destroy_vk_staging_manager(vk_staging_manager *manager) {
     if (manager->memory) {
         vk_UnmapMemory(context.device, manager->memory);
+        vk_FreeMemory(context.device, manager->memory, NULL);
         manager->memory = VK_NULL_HANDLE;
         manager->mapped_data = NULL;
     }
@@ -239,6 +240,11 @@ void destroy_vk_staging_manager(vk_staging_manager *manager) {
         if (manager->buffers[i].command_buffer)
             vk_FreeCommandBuffers(context.device, manager->command_pool, 1, &manager->buffers[i].command_buffer);
         init_vk_staging_buffer(&manager->buffers[i]);
+    }
+
+    if (manager->command_pool) {
+        vk_DestroyCommandPool(context.device, manager->command_pool, NULL);
+        manager->command_pool = VK_NULL_HANDLE;
     }
 
     manager->max_buffer_size = 0;

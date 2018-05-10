@@ -70,6 +70,19 @@ static bool start_frame(render_backend *r) {
     };
 
     CHECK_VK(vk_BeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+    VkViewport viewport;
+    viewport.x = viewport.y = 0;
+    viewport.width = 400;
+    viewport.height = 400;
+    viewport.minDepth = 0;
+    viewport.maxDepth = 1;
+    vk_CmdSetViewport(command_buffer, 0, 1, &viewport);
+
+    VkRect2D scissor;
+    scissor.offset.x = scissor.offset.y = 0;
+    scissor.extent.width = viewport.width;
+    scissor.extent.height = viewport.height;
+    vk_CmdSetScissor(command_buffer, 0, 1, &scissor);
 
     vk_CmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
 
@@ -116,7 +129,7 @@ static bool end_frame(render_backend *r) {
         .pNext = NULL,
         .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         .dstAccessMask = 0,
-        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
