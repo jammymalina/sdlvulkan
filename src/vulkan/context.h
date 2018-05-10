@@ -49,6 +49,8 @@ typedef struct vk_context {
     VkRenderPass render_pass;
 
     VkFramebuffer framebuffers[NUM_FRAME_DATA];
+
+    VkPipelineCache pipeline_cache;
 } vk_context;
 
 extern vk_context context;

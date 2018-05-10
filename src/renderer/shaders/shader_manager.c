@@ -76,12 +76,12 @@ static bool init_shaders(render_program_manager *m) {
     return success;
 }
 
-static bool create_descriptor_set_layout(render_program_manager *m, render_program *rp) {
+static bool create_descriptor_set_layout(render_program_manager *m, render_program *prog) {
     static VkDescriptorSetLayoutBinding layout_bindings[SHADER_TYPES_COUNT * MAX_SHADER_BINDINGS_SIZE];
-    struct { int index; shader_type type; } shader_array[SHADER_TYPES_COUNT] ={
-        { rp->shader_indices.vert, SHADER_TYPE_VERTEX }, { rp->shader_indices.frag, SHADER_TYPE_FRAGMENT },
-        { rp->shader_indices.tesc, SHADER_TYPE_TESS_CTRL }, { rp->shader_indices.tese, SHADER_TYPE_TESS_EVAL },
-        { rp->shader_indices.geom, SHADER_TYPE_GEOMETRY }, { rp->shader_indices.comp, SHADER_TYPE_COMPUTE }
+    struct { int index; shader_type type; } shader_array[SHADER_TYPES_COUNT] = {
+        { prog->shader_indices.vert, SHADER_TYPE_VERTEX }, { prog->shader_indices.frag, SHADER_TYPE_FRAGMENT },
+        { prog->shader_indices.tesc, SHADER_TYPE_TESS_CTRL }, { prog->shader_indices.tese, SHADER_TYPE_TESS_EVAL },
+        { prog->shader_indices.geom, SHADER_TYPE_GEOMETRY }, { prog->shader_indices.comp, SHADER_TYPE_COMPUTE }
     };
 
     uint32_t bindings_count = 0;
@@ -113,7 +113,7 @@ static bool create_descriptor_set_layout(render_program_manager *m, render_progr
         .bindingCount = bindings_count,
         .pBindings = bindings_count == 0 ? NULL : layout_bindings
     };
-    CHECK_VK(vk_CreateDescriptorSetLayout(context.device, &descriptor_set_info, NULL, &rp->descriptor_set_layout));
+    CHECK_VK(vk_CreateDescriptorSetLayout(context.device, &descriptor_set_info, NULL, &prog->descriptor_set_layout));
 
     return true;
 }
@@ -144,7 +144,116 @@ static bool create_pipeline(VkPipeline *pipeline, uint64_t state_bits, render_pr
 	vertex_input_state.pVertexAttributeDescriptions = layout->attribute_desc;
 
     // input assembly
+    VkPipelineInputAssemblyStateCreateInfo input_assembly = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .primitiveRestartEnable = VK_FALSE
+    };
 
+    // rasterization
+    VkPipelineRasterizationStateCreateInfo rasterization_state = get_rasterization_state_from_pipeline_bits(state_bits);
+
+    // color blend attachment
+    VkPipelineColorBlendAttachmentState color_blend_attachment =
+        get_color_blend_attachment_from_pipeline_bits(state_bits);
+
+    // color blend
+    VkPipelineColorBlendStateCreateInfo color_blend = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext= NULL,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_CLEAR,
+        .attachmentCount = 1,
+        .pAttachments = &color_blend_attachment,
+        .blendConstants = {0, 0, 0, 0}
+    };
+
+    // depth / stencil
+    VkPipelineDepthStencilStateCreateInfo depth_stencil_info = get_depth_stencil_info_from_pipeline_bits(state_bits);
+
+    // multisample
+    VkPipelineMultisampleStateCreateInfo multisample_info = get_multisample_info();
+
+    // shader stages
+    int shader_indexarray[SHADER_TYPES_COUNT] = {
+        prog->shader_indices.vert, prog->shader_indices.frag, prog->shader_indices.tesc, prog->shader_indices.tese,
+        prog->shader_indices.geom, prog->shader_indices.comp
+    };
+
+    VkPipelineShaderStageCreateInfo shader_stages[SHADER_TYPES_COUNT];
+    size_t shader_stages_size = 0;
+
+    for (size_t i = 0; i < SHADER_TYPES_COUNT; i++) {
+        if (shader_indexarray[i] == -1)
+            continue;
+
+        shader *s = &m->shaders[shader_indexarray[i]];
+
+        VkPipelineShaderStageCreateInfo shader_stage_info = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = NULL,
+            .flags = 0,
+            .stage = shader_type_to_shader_stage(s->type),
+            .module = s->module,
+            .pName = "main",
+            .pSpecializationInfo = NULL
+        };
+        shader_stages[shader_stages_size] = shader_stage_info;
+
+        shader_stages_size++;
+    }
+
+    // dynamic state
+    VkDynamicState dynamic_states[MAX_PIPELINE_DYNAMIC_STATES_SIZE];
+    size_t dynamic_states_size = get_dynamic_states_from_pipeline_bits(dynamic_states, state_bits);
+
+    VkPipelineDynamicStateCreateInfo dynamic_info = {
+        .sType = 0,
+        .pNext = NULL,
+        .flags = 0,
+        .dynamicStateCount = dynamic_states_size,
+        .pDynamicStates = dynamic_states
+    };
+
+    // pViewports and pScissors ignored because of dynamic state
+    VkPipelineViewportStateCreateInfo viewport_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .viewportCount = 1,
+        .pViewports = NULL,
+        .scissorCount = 1,
+        .pScissors = NULL
+    };
+
+    // pipeline
+    VkGraphicsPipelineCreateInfo pipeline_info = {
+        .sType = 0,
+        .pNext = NULL,
+        .flags = 0,
+        .stageCount = shader_stages_size,
+        .pStages = shader_stages,
+        .pVertexInputState = &vertex_input_state,
+        .pInputAssemblyState = &input_assembly,
+        .pTessellationState = NULL,
+        .pViewportState = &viewport_info,
+        .pRasterizationState = &rasterization_state,
+        .pMultisampleState = &multisample_info,
+        .pDepthStencilState = &depth_stencil_info,
+        .pColorBlendState = &color_blend,
+        .pDynamicState = &dynamic_info,
+        .layout = prog->pipeline_layout,
+        .renderPass = context.render_pass,
+        .subpass = 0,
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = 0
+    };
+
+    *pipeline = VK_NULL_HANDLE;
+    CHECK_VK(vk_CreateGraphicsPipelines(context.device, context.pipeline_cache, 1, &pipeline_info, NULL, pipeline));
 
     return true;
 }
@@ -209,6 +318,8 @@ static bool get_pipeline_render_program_instance(pipeline_state *dest, render_pr
 static bool init_render_program_from_config(render_program *prog, const render_program_config *rp_conf,
     render_program_manager *m)
 {
+    init_render_program(prog);
+
     prog->instance = rp_conf->instance;
 
     prog->shader_indices.vert = rp_conf->shader_instances.vert != SHADER_INSTANCE_UNDEFINED ?
@@ -382,6 +493,7 @@ void destroy_render_program(render_program *prog) {
         prog->descriptor_set_layout = VK_NULL_HANDLE;
     }
     for (size_t i = 0; i < prog->pipeline_cache_size; i++) {
+        log_info("Cuckhalla, fuckhalla, %zu %zu", i, prog->pipeline_cache_size);
         pipeline_state *ps = &prog->pipeline_cache[i];
         if (ps->pipeline) {
             vk_DestroyPipeline(context.device, ps->pipeline, NULL);

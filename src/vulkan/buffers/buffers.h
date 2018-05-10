@@ -38,24 +38,26 @@ bool copy_buffer_data(byte *dest, const byte *src, VkDeviceSize num_bytes);
 
 void init_vk_buffer(vk_buffer *buffer, buffer_type type);
 bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buffer_usage_type usage);
+bool reference_vk_buffer(vk_buffer *dest, const vk_buffer *src);
+bool reference_vk_buffer_part(vk_buffer *dest, const vk_buffer *src, VkDeviceSize ref_offset, VkDeviceSize ref_size);
 void free_vk_buffer(vk_buffer *buffer);
 bool update_data_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize size, VkDeviceSize offset);
 bool map_vk_buffer(vk_buffer *buffer, void **dest, buffer_map_type map_type);
 bool unmap_vk_buffer(vk_buffer *buffer);
 
-static inline VkDeviceSize get_allocated_buffer_size(vk_buffer *buffer) {
+static inline VkDeviceSize get_allocated_buffer_size(const vk_buffer *buffer) {
     return ((buffer->size & ~MAPPED_FLAG) + 15) & ~15;
 }
 
-static inline VkDeviceSize get_buffer_offset(vk_buffer *buffer) {
+static inline VkDeviceSize get_buffer_offset(const vk_buffer *buffer) {
     return buffer->offset_in_other_buffer & ~OWNS_BUFFER_FLAG;
 }
 
-static inline bool owns_buffer(vk_buffer *buffer) {
+static inline bool owns_buffer(const vk_buffer *buffer) {
     return (buffer->offset_in_other_buffer & OWNS_BUFFER_FLAG) != 0;
 }
 
-static inline bool is_buffer_mapped(vk_buffer *buffer) {
+static inline bool is_buffer_mapped(const vk_buffer *buffer) {
     return (buffer->size & MAPPED_FLAG) != 0;
 }
 

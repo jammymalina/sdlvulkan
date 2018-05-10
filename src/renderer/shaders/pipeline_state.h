@@ -28,7 +28,8 @@ static inline void copy_pipeline_state(pipeline_state *dest, const pipeline_stat
 VkPipelineRasterizationStateCreateInfo get_rasterization_state_from_pipeline_bits(uint64_t state_bits);
 VkPipelineColorBlendAttachmentState get_color_blend_attachment_from_pipeline_bits(uint64_t state_bits);
 VkPipelineDepthStencilStateCreateInfo get_depth_stencil_info_from_pipeline_bits(uint64_t state_bits);
-void get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
+VkPipelineMultisampleStateCreateInfo get_multisample_info();
+size_t get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
     uint64_t state_bits);
 
 #endif // PIPELINE_STATE_H

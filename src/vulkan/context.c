@@ -37,6 +37,7 @@ void init_vk_context(vk_context *ctx) {
     ctx->gpus_size = 0;
     ctx->supersampling = false;
     ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;
+    ctx->pipeline_cache = VK_NULL_HANDLE;
 }
 
 static bool create_instance(vk_context *ctx, SDL_Window *window) {
@@ -493,6 +494,20 @@ static bool create_framebuffers(vk_context *ctx) {
     return true;
 }
 
+static bool create_pipeline_cache(vk_context *ctx) {
+    VkPipelineCacheCreateInfo pipeline_cache_info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+        .pNext = NULL,
+        .flags = 0,
+        .initialDataSize = 0,
+        .pInitialData = NULL
+    };
+
+    CHECK_VK(vk_CreatePipelineCache(ctx->device, &pipeline_cache_info, NULL, &ctx->pipeline_cache));
+
+    return true;
+}
+
 bool init_vulkan(vk_context *ctx, SDL_Window *window) {
     init_vk_context(ctx);
     return init_vulkan_function_loader() &&
@@ -515,6 +530,7 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
         get_depth_format(ctx) &&
         create_render_targets(ctx) &&
         create_render_pass(ctx) &&
+        create_pipeline_cache(ctx) &&
         create_framebuffers(ctx) &&
         init_ren_pm();
 }
@@ -529,6 +545,9 @@ void shutdown_vulkan(vk_context *ctx) {
                 vk_DestroyFramebuffer(ctx->device, ctx->framebuffers[i], NULL);
             }
         }
+    }
+    if (vk_DestroyPipelineCache && ctx->pipeline_cache) {
+        vk_DestroyPipelineCache(ctx->device, ctx->pipeline_cache, NULL);
     }
     if (vk_DestroyRenderPass && ctx->render_pass) {
         vk_DestroyRenderPass(ctx->device, ctx->render_pass, NULL);

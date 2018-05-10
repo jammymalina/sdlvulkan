@@ -105,11 +105,57 @@ bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buf
     return true;
 }
 
+bool reference_vk_buffer(vk_buffer *dest, const vk_buffer *src) {
+    if (is_buffer_mapped(dest)) {
+        log_error("Buffer is mapped, cannot create reference");
+        return false;
+    }
+
+    free_vk_buffer(dest);
+    dest->size = src->size;
+    dest->offset_in_other_buffer = get_buffer_offset(src);
+    dest->usage = src->usage;
+    dest->buffer = src->buffer;
+    dest->allocation = src->allocation;
+
+    if (owns_buffer(dest)) {
+        log_error("Buffer should be a reference and not own itself");
+        return false;
+    }
+
+    return true;
+}
+
+bool reference_vk_buffer_part(vk_buffer *dest, const vk_buffer *src, VkDeviceSize ref_offset, VkDeviceSize ref_size) {
+    if (is_buffer_mapped(dest)) {
+        log_error("Buffer is mapped, cannot create reference");
+        return false;
+    }
+    if (ref_offset + ref_size > src->size) {
+        log_error("Unable to reference buffer, the reference part is out of bounds of the source buffer");
+        return false;
+    }
+
+    free_vk_buffer(dest);
+    dest->size = ref_size;
+    dest->offset_in_other_buffer = get_buffer_offset(src) + ref_offset;
+    dest->usage = src->usage;
+    dest->buffer = src->buffer;
+    dest->allocation = src->allocation;
+
+    if (owns_buffer(dest)) {
+        log_error("Buffer should be a reference and not own itself");
+        return false;
+    }
+
+    return true;
+}
+
 static void clear_buffer(vk_buffer *buffer) {
-    buffer->size = 0; 
+    buffer->size = 0;
     buffer->offset_in_other_buffer = OWNS_BUFFER_FLAG;
     buffer->buffer = VK_NULL_HANDLE;
-    buffer->allocation.device_memory = VK_NULL_HANDLE;   
+    buffer->allocation.device_memory = VK_NULL_HANDLE;
 }
 
 void free_vk_buffer(vk_buffer *buffer) {
@@ -176,7 +222,7 @@ bool update_data_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize size, VkD
 
 bool map_vk_buffer(vk_buffer *buffer, void **dest, buffer_map_type map_type) {
     if (!buffer->buffer) {
-        log_error("Buffer is not allocated (vulkan handle is null)");        
+        log_error("Buffer is not allocated (vulkan handle is null)");
         return false;
     }
     if (buffer->usage == BU_STATIC) {
@@ -212,6 +258,6 @@ bool unmap_vk_buffer(vk_buffer *buffer) {
     }
 
     set_buffer_unmapped(buffer);
-    
+
     return true;
 }

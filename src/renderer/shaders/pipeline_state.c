@@ -360,7 +360,7 @@ VkPipelineMultisampleStateCreateInfo get_multisample_info() {
     return multisample_info;
 }
 
-void get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
+size_t get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNAMIC_STATES_SIZE],
     uint64_t state_bits)
 {
     gpu_info *gpu = &context.gpus[context.selected_gpu];
@@ -374,4 +374,6 @@ void get_dynamic_states_from_pipeline_bits(VkDynamicState dest[MAX_PIPELINE_DYNA
     if (gpu->features.depthBounds && (state_bits & RST_DEPTH_TEST_MASK)) {
         dest[i++] = VK_DYNAMIC_STATE_DEPTH_BOUNDS;
     }
+
+    return i;
 }
