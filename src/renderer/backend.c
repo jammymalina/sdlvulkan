@@ -74,6 +74,12 @@ static bool start_frame(render_backend *r) {
 
     vk_CmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
 
+    VkClearValue clear_values[2];
+    VkClearColorValue clear_color = { { 1.0f, 0.0f, 0.0f, 1.0f } };
+    VkClearDepthStencilValue clear_depth = { 1.0f, 0 };
+    clear_values[0].color= clear_color;
+    clear_values[1].depthStencil = clear_depth;
+
     VkRenderPassBeginInfo render_pass_begin_info = {
         .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext       = NULL,
@@ -86,8 +92,8 @@ static bool start_frame(render_backend *r) {
             },
             .extent = context.extent
         },
-        .clearValueCount = 0,
-        .pClearValues    = NULL,
+        .clearValueCount = 2,
+        .pClearValues    = clear_values,
     };
 
     vk_CmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
