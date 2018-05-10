@@ -158,11 +158,11 @@
 #define RST_MIRROR_VIEW     (UINT64_C(1) << 62)
 #define RST_OVERRIDE        (UINT64_C(1) << 63)
 
-#define RST_KEEP    RST_DEPTH_TEST_MASK;
+#define RST_KEEP    RST_DEPTH_TEST_MASK
 #define RST_DEFAULT UINT64_C(0)
 
 // predefined states
 
-#define RST_BASIC_3D (RST_CULL_TWOSIDED)
+#define RST_BASIC_3D (RST_CULL_TWOSIDED | RST_DEPTHFUNC_ALWAYS)
 
 #endif // RENDER_STATE_H

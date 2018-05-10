@@ -8,6 +8,8 @@
 #include "../vulkan/memory/memory.h"
 #include "../vulkan/memory/staging.h"
 #include "../logger/logger.h"
+#include "./shaders/shader_manager.h"
+#include "./render_state.h"
 
 render_backend renderer;
 
@@ -35,6 +37,11 @@ static bool start_frame(render_backend *r) {
         context.acquire_semaphores[r->current_frame], VK_NULL_HANDLE, &r->current_swap_index));
     vk_empty_garbage();
     vk_flush_stage();
+
+    if (!start_frame_ren_pm()) {
+        log_error("Unable to start render manager");
+        return false;
+    }
 
     VkQueryPool query_pool = context.query_pools[r->current_frame];
     uint64_t *results = r->query_results[r->current_frame];
@@ -93,9 +100,9 @@ static bool start_frame(render_backend *r) {
 static bool end_frame(render_backend *r) {
     VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
 
-    vk_CmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, context.query_pools[r->current_frame], 
+    vk_CmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, context.query_pools[r->current_frame],
         r->query_index[r->current_frame]);
-    
+
     vk_CmdEndRenderPass(command_buffer);
 
     r->query_index[r->current_frame]++;
@@ -108,7 +115,7 @@ static bool end_frame(render_backend *r) {
         .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = context.swapchain_images[r->current_frame],
+        .image = context.swapchain_images[r->current_swap_index],
         .subresourceRange = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel = 0,
@@ -118,7 +125,7 @@ static bool end_frame(render_backend *r) {
         }
     };
 
-    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
+    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
     CHECK_VK(vk_EndCommandBuffer(command_buffer));
     r->command_buffer_recorded[r->current_frame] = true;
@@ -155,7 +162,20 @@ static bool end_frame(render_backend *r) {
 
     CHECK_VK(vk_QueuePresentKHR(context.present_queue, &present_info));
 
-    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA; 
+    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA;
+
+    return true;
+}
+
+static bool draw(render_backend *r) {
+    VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
+    bool success = bind_program_instance(RENDER_PROGRAM_INTANCE_TEST) &&
+        commit_current_program(RST_BASIC_3D, command_buffer);
+    if (!success) {
+        return false;
+    }
+
+    vk_CmdDraw(command_buffer, 3, 1, 0, 0);
 
     return true;
 }
@@ -166,12 +186,31 @@ bool execute_render_backend(render_backend *r) {
         log_error("Unable to start a frame");
         return false;
     }
-    
-    success = end_frame(r);
+
+    success = draw(r);
     if (!success) {
-        log_error("Uable to finish a frame");
+        log_error("Unable to draw stuff");
         return false;
     }
+
+    success = end_frame(r);
+    if (!success) {
+        log_error("Unable to finish a frame");
+        return false;
+    }
+
+    return true;
+}
+
+bool block_swap_buffers_render_backend(render_backend *r) {
+    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA;
+
+    if (!r->command_buffer_recorded[r->current_frame]) {
+        return true;
+    }
+    CHECK_VK(vk_WaitForFences(context.device, 1, &context.command_buffer_fences[r->current_frame], VK_TRUE, UINT64_MAX));
+    CHECK_VK(vk_ResetFences(context.device, 1, &context.command_buffer_fences[r->current_frame]));
+    r->command_buffer_recorded[r->current_frame] = false;
 
     return true;
 }
@@ -181,5 +220,6 @@ void init_renderer() {
 }
 
 bool render() {
-    return execute_render_backend(&renderer);
+    return execute_render_backend(&renderer) && block_swap_buffers_render_backend(&renderer);
 }
+

@@ -89,12 +89,17 @@ int find_shader_instance_program_manager(render_program_manager *m, shader_insta
     shader_type type);
 int find_render_program_instance_program_manager(render_program_manager *m, render_program_instance instance);
 bool start_frame_render_program_manager(render_program_manager *m);
+bool bind_program_instance_render_program_manager(render_program_manager *m, render_program_instance instance);
+bool commit_current_program_render_program_manager(render_program_manager *m,
+    uint64_t state_bits, VkCommandBuffer command_buffer);
 void destroy_render_program_manager(render_program_manager *m);
 
 extern render_program_manager ren_pm;
 
 bool init_ren_pm();
 bool start_frame_ren_pm();
+bool bind_program_instance(render_program_instance instance);
+bool commit_current_program(uint64_t state_bits, VkCommandBuffer command_buffer);
 void destroy_ren_pm();
 
 #endif // SHADER_MANAGER_H

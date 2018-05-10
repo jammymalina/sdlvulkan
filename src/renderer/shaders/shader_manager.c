@@ -493,7 +493,6 @@ void destroy_render_program(render_program *prog) {
         prog->descriptor_set_layout = VK_NULL_HANDLE;
     }
     for (size_t i = 0; i < prog->pipeline_cache_size; i++) {
-        log_info("Cuckhalla, fuckhalla, %zu %zu", i, prog->pipeline_cache_size);
         pipeline_state *ps = &prog->pipeline_cache[i];
         if (ps->pipeline) {
             vk_DestroyPipeline(context.device, ps->pipeline, NULL);
@@ -560,6 +559,41 @@ bool start_frame_render_program_manager(render_program_manager *m) {
     return true;
 }
 
+bool bind_program_instance_render_program_manager(render_program_manager *m, render_program_instance instance) {
+    if (m->programs[m->current_render_program].instance == instance) {
+        return true;
+    }
+    m->current_render_program = find_render_program_instance_program_manager(m, instance);
+    if (m->current_render_program == -1) {
+        log_error("Unable to bind program, could not find the desired instance %d", instance);
+        return false;
+    }
+
+    return true;
+}
+
+bool commit_current_program_render_program_manager(render_program_manager *m,
+    uint64_t state_bits, VkCommandBuffer command_buffer)
+{
+    if (m->current_render_program == -1) {
+        log_error("Unable to commit current render program - invalid index");
+        return false;
+    }
+    render_program *prog = &m->programs[m->current_render_program];
+    pipeline_state ps;
+    bool success = get_pipeline_render_program(&ps, prog, state_bits, m);
+    if (!success) {
+        log_error("Unable to commit current render program - could not create / get pipeline");
+        return false;
+    }
+
+    VkPipelineBindPoint bind_point = prog->shader_indices.comp == -1 ?
+        VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+    vk_CmdBindPipeline(command_buffer, bind_point, ps.pipeline);
+
+    return true;
+}
+
 void destroy_render_program_manager(render_program_manager *m) {
     for (size_t i = 0; i < m->programs_size; i++) {
         destroy_render_program(&m->programs[i]);
@@ -585,6 +619,14 @@ bool init_ren_pm() {
 
 bool start_frame_ren_pm() {
     return start_frame_render_program_manager(&ren_pm);
+}
+
+bool bind_program_instance(render_program_instance instance) {
+    return bind_program_instance_render_program_manager(&ren_pm, instance);
+}
+
+bool commit_current_program(uint64_t state_bits, VkCommandBuffer command_buffer) {
+    return commit_current_program_render_program_manager(&ren_pm, state_bits, command_buffer);
 }
 
 void destroy_ren_pm() {

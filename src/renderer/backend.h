@@ -24,7 +24,8 @@ extern render_backend renderer;
 void init_backend_counters(backend_counters *b);
 
 void init_render_backend(render_backend *r);
-bool execute_render_backend(render_backend *r); 
+bool execute_render_backend(render_backend *r);
+bool block_swap_buffers_render_backend(render_backend *r);
 
 void init_renderer();
 bool render();
