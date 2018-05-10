@@ -10,6 +10,7 @@
 #include "../logger/logger.h"
 #include "./shaders/shader_manager.h"
 #include "./render_state.h"
+#include "./config.h"
 
 render_backend renderer;
 
@@ -71,18 +72,27 @@ static bool start_frame(render_backend *r) {
     };
 
     CHECK_VK(vk_BeginCommandBuffer(command_buffer, &command_buffer_begin_info));
-    VkViewport viewport;
-    viewport.x = viewport.y = 0;
-    viewport.width = 400;
-    viewport.height = 400;
-    viewport.minDepth = 0;
-    viewport.maxDepth = 1;
+
+    VkViewport viewport = {
+        x: 0,
+        y: 0,
+        width: render_config.width,
+        height: render_config.height,
+        minDepth: 0.0f,
+        maxDepth: 1.0f
+    };
     vk_CmdSetViewport(command_buffer, 0, 1, &viewport);
 
-    VkRect2D scissor;
-    scissor.offset.x = scissor.offset.y = 0;
-    scissor.extent.width = viewport.width;
-    scissor.extent.height = viewport.height;
+    VkRect2D scissor = {
+        offset: {
+            x: 0,
+            y: 0,
+        },
+        extent: {
+            width: viewport.width,
+            height: viewport.height
+        }
+    };
     vk_CmdSetScissor(command_buffer, 0, 1, &scissor);
 
     vk_CmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
