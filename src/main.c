@@ -99,6 +99,7 @@ int main(int argc, char* args[]) {
                     break;
             }
         }
+        SDL_Delay(500);
     }
 
     if (window == NULL) {

@@ -12,7 +12,6 @@ typedef struct backend_counters {
 
 typedef struct render_backend {
     uint32_t current_frame;
-    uint32_t current_swap_index;
     uint64_t query_results[NUM_FRAME_DATA][NUM_TIMESTAMP_QUERIES];
     uint32_t query_index[NUM_FRAME_DATA];
     bool command_buffer_recorded[NUM_FRAME_DATA];

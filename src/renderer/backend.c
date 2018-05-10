@@ -19,7 +19,6 @@ void init_backend_counters(backend_counters *b) {
 
 void init_render_backend(render_backend *r) {
     r->current_frame = 0;
-    r->current_swap_index = 0;
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         r->query_index[i] = 0;
@@ -34,7 +33,7 @@ void init_render_backend(render_backend *r) {
 
 static bool start_frame(render_backend *r) {
     CHECK_VK(vk_AcquireNextImageKHR(context.device, context.swapchain, UINT64_MAX,
-        context.acquire_semaphores[r->current_frame], VK_NULL_HANDLE, &r->current_swap_index));
+        context.acquire_semaphores[r->current_frame], VK_NULL_HANDLE, &r->current_frame));
     vk_empty_garbage();
     vk_flush_stage();
 
@@ -84,7 +83,7 @@ static bool start_frame(render_backend *r) {
         .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext       = NULL,
         .renderPass  = context.render_pass,
-        .framebuffer = context.framebuffers[r->current_swap_index],
+        .framebuffer = context.framebuffers[r->current_frame],
         .renderArea  = {
             .offset  = {
                 .x = 0,
@@ -121,7 +120,7 @@ static bool end_frame(render_backend *r) {
         .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = context.swapchain_images[r->current_swap_index],
+        .image = context.swapchain_images[r->current_frame],
         .subresourceRange = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .baseMipLevel = 0,
@@ -154,6 +153,10 @@ static bool end_frame(render_backend *r) {
     };
 
     CHECK_VK(vk_QueueSubmit(context.graphics_queue, 1, &submit_info, context.command_buffer_fences[r->current_frame]));
+    if (!block_swap_buffers_render_backend(&renderer)) {
+        log_error("Unable to swap buffers");
+        return false;
+    }
 
     VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -162,13 +165,11 @@ static bool end_frame(render_backend *r) {
         .pWaitSemaphores = render_complete_semaphore,
         .swapchainCount = 1,
         .pSwapchains = &context.swapchain,
-        .pImageIndices = &r->current_swap_index,
+        .pImageIndices = &r->current_frame,
         .pResults = NULL
     };
 
     CHECK_VK(vk_QueuePresentKHR(context.present_queue, &present_info));
-
-    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA;
 
     return true;
 }
@@ -209,8 +210,6 @@ bool execute_render_backend(render_backend *r) {
 }
 
 bool block_swap_buffers_render_backend(render_backend *r) {
-    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA;
-
     if (!r->command_buffer_recorded[r->current_frame]) {
         return true;
     }
@@ -226,6 +225,6 @@ void init_renderer() {
 }
 
 bool render() {
-    return execute_render_backend(&renderer) && block_swap_buffers_render_backend(&renderer);
+    return execute_render_backend(&renderer);
 }
 

@@ -2,15 +2,16 @@
 
 #include <SDL2/SDL_vulkan.h>
 #include <stdint.h>
-#include "../logger/logger.h"
-#include "../window/config.h"
-#include "../utils/heap.h"
 #include "./functions/functions.h"
 #include "./functions/function_loader.h"
-#include "./tools/tools.h"
-#include "../renderer/config.h"
+#include "./debug.h"
 #include "./memory/memory.h"
 #include "./memory/staging.h"
+#include "./tools/tools.h"
+#include "../utils/heap.h"
+#include "../logger/logger.h"
+#include "../window/config.h"
+#include "../renderer/config.h"
 #include "../renderer/shaders/shader_manager.h"
 
 vk_context context;
@@ -38,6 +39,9 @@ void init_vk_context(vk_context *ctx) {
     ctx->supersampling = false;
     ctx->sample_count = VK_SAMPLE_COUNT_1_BIT;
     ctx->pipeline_cache = VK_NULL_HANDLE;
+    #ifndef DEBUG
+        ctx->debug_callback = VK_NULL_HANDLE;
+    #endif
 }
 
 static bool create_instance(vk_context *ctx, SDL_Window *window) {
@@ -48,13 +52,38 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
         log_error("SDL_Vulkan_GetInstanceExtensions(): %s", SDL_GetError());
         return false;
     }
-    extensions = mem_alloc(sizeof(const char*) * extension_count);
+
+    uint32_t debug_extension_count = 0;
+    #ifdef DEBUG
+        debug_extension_count = 1;
+    #endif
+
+    extensions = mem_alloc(sizeof(const char*) * (extension_count + debug_extension_count));
     CHECK_ALLOC(extensions, "Allocation fail");
+
     if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions)) {
         mem_free(extensions);
         log_error("SDL_Vulkan_GetInstanceExtensions(): %s", SDL_GetError());
         return false;
     }
+
+    // push debug extension + enable validation layers
+    #ifdef DEBUG
+        extension_count += debug_extension_count;
+
+        const char *validation_layer_names[] = { "VK_LAYER_LUNARG_standard_validation" };
+        uint32_t validation_layers_size = 1;
+
+        if (!check_validation_layers(validation_layer_names, validation_layers_size)) {
+            log_error("Unavailable validation layers");
+            validation_layers_size = 0;
+        }
+
+        extensions[extension_count - 1] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
+    #else
+        const char **validation_layer_names = NULL;
+        uint32_t validation_layers_size = 0;
+    #endif
 
     VkApplicationInfo vk_application_info = {
         .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -71,8 +100,8 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
         .pNext                   = NULL,
         .flags                   = 0,
         .pApplicationInfo        = &vk_application_info,
-        .enabledLayerCount       = 0,
-        .ppEnabledLayerNames     = NULL,
+        .enabledLayerCount       = validation_layers_size,
+        .ppEnabledLayerNames     = validation_layer_names,
         .enabledExtensionCount   = extension_count,
         .ppEnabledExtensionNames = extensions
     };
@@ -89,6 +118,20 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
 
     return true;
 }
+
+#ifdef DEBUG
+    bool setup_debug_callback(vk_context *ctx) {
+        VkDebugReportCallbackCreateInfoEXT debug_callback_info = {
+            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+            .pNext = NULL,
+            .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
+            .pfnCallback = vulkan_debug_callback,
+            .pUserData = NULL
+        };
+        CHECK_VK(vk_CreateDebugReportCallbackEXT(ctx->instance, &debug_callback_info, NULL, &ctx->debug_callback));
+        return true;
+    }
+#endif
 
 static bool create_surface(vk_context *ctx, SDL_Window *window) {
     if (!SDL_Vulkan_CreateSurface(window, ctx->instance, &ctx->surface)) {
@@ -514,6 +557,11 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
         load_global_functions() &&
         create_instance(ctx, window) &&
         load_instance_vulkan_functions(ctx->instance) &&
+
+        #ifdef DEBUG
+            setup_debug_callback(ctx) &&
+        #endif
+
         create_surface(ctx, window) &&
         enumerate_physical_devices(ctx) &&
         choose_suitable_graphics_gpu(ctx) &&
@@ -605,6 +653,11 @@ void shutdown_vulkan(vk_context *ctx) {
     if (ctx->surface && vk_DestroySurfaceKHR) {
         vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
     }
+    #ifdef DEBUG
+        if (ctx->debug_callback && vk_DestroyDebugReportCallbackEXT) {
+            vk_DestroyDebugReportCallbackEXT(ctx->instance, ctx->debug_callback, NULL);
+        }
+    #endif
     if (ctx->instance && vk_DestroyInstance) {
         vk_DestroyInstance(ctx->instance, NULL);
     }

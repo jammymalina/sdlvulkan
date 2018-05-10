@@ -51,6 +51,10 @@ typedef struct vk_context {
     VkFramebuffer framebuffers[NUM_FRAME_DATA];
 
     VkPipelineCache pipeline_cache;
+
+    #ifdef DEBUG
+        VkDebugReportCallbackEXT debug_callback;
+    #endif
 } vk_context;
 
 extern vk_context context;

@@ -30,7 +30,7 @@ void init_vk_staging_manager(vk_staging_manager *manager) {
 
 bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
     manager->max_buffer_size = vk_mem_config.upload_buffer_size_MB * 1024 * 1024;
-    
+
     VkBufferCreateInfo buffer_info = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = NULL,
@@ -51,27 +51,36 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
     vk_GetBufferMemoryRequirements(context.device, manager->buffers[0].buffer, &mem_requirements);
 
     VkDeviceSize align_mod = mem_requirements.size % mem_requirements.alignment;
-    VkDeviceSize aligned_size = align_mod == 0 ? 
+    VkDeviceSize aligned_size = align_mod == 0 ?
         mem_requirements.size : (mem_requirements.size + mem_requirements.alignment - align_mod);
-    
+
     uint32_t memory_type_index = find_memory_type_index(mem_requirements.memoryTypeBits, VULKAN_MEMORY_USAGE_CPU_TO_GPU);
 
     VkMemoryAllocateInfo mem_info = {
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .pNext = NULL,
-        .allocationSize = aligned_size,
+        .allocationSize = aligned_size * NUM_FRAME_DATA,
         .memoryTypeIndex = memory_type_index
     };
 
     CHECK_VK(vk_AllocateMemory(context.device, &mem_info, NULL, &manager->memory));
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
+        VkMemoryRequirements current_mem_requirements;
+        vk_GetBufferMemoryRequirements(context.device, manager->buffers[i].buffer, &current_mem_requirements);
+        if (current_mem_requirements.size != mem_requirements.size ||
+            current_mem_requirements.alignment != mem_requirements.alignment ||
+            current_mem_requirements.memoryTypeBits != mem_requirements.memoryTypeBits)
+        {
+            log_error("Different memory requirements for stage buffers");
+            return false;
+        }
         CHECK_VK(vk_BindBufferMemory(context.device, manager->buffers[i].buffer, manager->memory, i * aligned_size));
     }
 
     CHECK_VK(vk_MapMemory(context.device, manager->memory, 0, aligned_size * NUM_FRAME_DATA, 0,
         (void**) &manager->mapped_data));
-    
+
     VkCommandPoolCreateInfo pool_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = NULL,
@@ -88,7 +97,7 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
         .level = 0,
         .commandBufferCount = 1
     };
-    
+
     VkFenceCreateInfo fence_info = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .pNext = NULL,
@@ -107,7 +116,7 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
             &manager->buffers[i].command_buffer));
         CHECK_VK(vk_CreateFence(context.device, &fence_info, NULL, &manager->buffers[i].fence));
         CHECK_VK(vk_BeginCommandBuffer(manager->buffers[i].command_buffer, &command_buffer_begin_info));
-    
+
         manager->buffers[i].data = (byte*) manager->mapped_data + (i * aligned_size);
     }
 
@@ -184,7 +193,7 @@ void flush_vk_staging_manager(vk_staging_manager *manager) {
         .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
         .dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT
     };
-    vk_CmdPipelineBarrier(stage->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 
+    vk_CmdPipelineBarrier(stage->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
         0, 1, &barrier, 0, NULL, 0, NULL);
 
     vk_EndCommandBuffer(stage->command_buffer);
