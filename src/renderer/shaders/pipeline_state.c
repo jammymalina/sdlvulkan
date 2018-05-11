@@ -21,6 +21,8 @@ VkPipelineRasterizationStateCreateInfo get_rasterization_state_from_pipeline_bit
             break;
     }
 
+    log_info("Cuck: %lu %lu", RST_CULL_FRONTSIDED, state_bits & RST_CULL_BITS);
+
     VkPipelineRasterizationStateCreateInfo rasterization_info = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pNext = NULL,

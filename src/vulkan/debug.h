@@ -16,6 +16,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(VkDebugReportFlagsEXT flags
     VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char *layer_prefix,
     const char *msg, void *userData);
 
-
-
 #endif // VULKAN_DEBUG_H
