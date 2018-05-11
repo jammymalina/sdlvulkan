@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "./functions/functions.h"
 #include "./functions/function_loader.h"
-#include "./debug.h"
 #include "./memory/memory.h"
 #include "./memory/staging.h"
 #include "./tools/tools.h"
@@ -13,6 +12,10 @@
 #include "../window/config.h"
 #include "../renderer/config.h"
 #include "../renderer/shaders/shader_manager.h"
+
+#ifdef DEBUG
+    #include "./debug.h"
+#endif
 
 vk_context context;
 
@@ -653,11 +656,13 @@ void shutdown_vulkan(vk_context *ctx) {
     if (ctx->surface && vk_DestroySurfaceKHR) {
         vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
     }
+
     #ifdef DEBUG
         if (ctx->debug_callback && vk_DestroyDebugReportCallbackEXT) {
             vk_DestroyDebugReportCallbackEXT(ctx->instance, ctx->debug_callback, NULL);
         }
     #endif
+
     if (ctx->instance && vk_DestroyInstance) {
         vk_DestroyInstance(ctx->instance, NULL);
     }

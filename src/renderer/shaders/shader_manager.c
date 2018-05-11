@@ -303,7 +303,7 @@ static bool get_pipeline_render_program(pipeline_state *dest, render_program *pr
     return true;
 }
 
-static bool get_pipeline_render_program_instance(pipeline_state *dest, render_program_instance instance,
+bool get_pipeline_render_program_instance(pipeline_state *dest, render_program_instance instance,
     uint64_t state_bits, render_program_manager *m)
 {
     int index = find_render_program_instance_program_manager(m, instance);

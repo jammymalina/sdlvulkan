@@ -195,6 +195,8 @@ static bool end_frame(render_backend *r) {
 
     CHECK_VK(vk_QueuePresentKHR(context.present_queue, &present_info));
 
+    r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA;
+
     return true;
 }
 

@@ -88,6 +88,8 @@ bool init_render_program_manager(render_program_manager *m);
 int find_shader_instance_program_manager(render_program_manager *m, shader_instance_type instance_type,
     shader_type type);
 int find_render_program_instance_program_manager(render_program_manager *m, render_program_instance instance);
+bool get_pipeline_render_program_instance(pipeline_state *dest, render_program_instance instance,
+    uint64_t state_bits, render_program_manager *m);
 bool start_frame_render_program_manager(render_program_manager *m);
 bool bind_program_instance_render_program_manager(render_program_manager *m, render_program_instance instance);
 bool commit_current_program_render_program_manager(render_program_manager *m,
