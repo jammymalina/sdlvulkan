@@ -1,13 +1,12 @@
 #ifndef GEOM_H
 #define GEOM_H
 
-#ifdef GEOM_FLOAT_PRECISION
-    typedef GEOM_FLOAT_PRECISION geom_float;
-#else
-    typedef float geom_float;
-#endif
+#include <stdint.h>
 
-#include <stdbool.h>
-#include <stddef.h>
+#define GEOM_PI 3.14159265358979323846
+#define GEOM_BIAS 0.00005
+
+#define GEOM_CLOCKWISE_BIT        (UINT32_C(1) << 0)
+#define GEOM_TEX_COORD_FLIP_Y_BIT (UINT32_C(1) << 1)
 
 #endif // GEOM_H

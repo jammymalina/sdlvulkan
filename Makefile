@@ -66,4 +66,4 @@ remove: clean
 	@echo "Executable removed!"
 
 valgrind: $(BINDIR)/$(TARGET)
-	@valgrind --leak-check=yes $(BINDIR)/$(TARGET)
+	@valgrind --leak-check=yes --track-origins=yes $(BINDIR)/$(TARGET)

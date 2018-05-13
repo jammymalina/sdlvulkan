@@ -27,9 +27,11 @@ void init_vk_context(vk_context *ctx) {
     ctx->present_queue = VK_NULL_HANDLE;
     ctx->command_pool = VK_NULL_HANDLE;
     ctx->swapchain = VK_NULL_HANDLE;
+    ctx->extent.width = ctx->extent.height = 0;
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         ctx->acquire_semaphores[i] = VK_NULL_HANDLE;
         ctx->render_complete_semaphores[i] = VK_NULL_HANDLE;
+        ctx->command_buffers[i] = VK_NULL_HANDLE;
         ctx->command_buffer_fences[i] = VK_NULL_HANDLE;
         ctx->swapchain_images[i] = VK_NULL_HANDLE;
         ctx->swapchain_views[i] = VK_NULL_HANDLE;
