@@ -465,7 +465,7 @@ static bool create_render_pass(vk_context *ctx) {
         .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        .finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
     VkAttachmentDescription depth_attachment = {
@@ -505,6 +505,27 @@ static bool create_render_pass(vk_context *ctx) {
 
     VkAttachmentDescription attachments[] = { color_attachment, depth_attachment };
 
+    VkSubpassDependency subpass_dependencies[] = {
+        {
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
+        },
+        {
+            .srcSubpass = 0,
+            .dstSubpass = VK_SUBPASS_EXTERNAL,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
+        }
+    };
+
     VkRenderPassCreateInfo render_pass_info = {
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext           = NULL,
@@ -513,8 +534,8 @@ static bool create_render_pass(vk_context *ctx) {
         .pAttachments    = attachments,
         .subpassCount    = 1,
         .pSubpasses      = &subpass,
-        .dependencyCount = 0,
-        .pDependencies   = NULL
+        .dependencyCount = 2,
+        .pDependencies   = subpass_dependencies
     };
 
     CHECK_VK(vk_CreateRenderPass(ctx->device, &render_pass_info, NULL, &ctx->render_pass));
