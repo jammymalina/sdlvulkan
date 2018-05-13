@@ -9,6 +9,8 @@
 #include "../vulkan/memory/staging.h"
 #include "../logger/logger.h"
 #include "./shaders/shader_manager.h"
+#include "../vertex_management/vertex_manager.h"
+
 #include "./render_state.h"
 #include "./config.h"
 
@@ -182,7 +184,7 @@ static bool end_frame(render_backend *r) {
 
 static bool draw(render_backend *r) {
     VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
-    bool success = bind_program_instance(RENDER_PROGRAM_INTANCE_TEST) &&
+    bool success = bind_program_instance(RENDER_PROGRAM_INSTANCE_TEST) &&
         commit_current_program(RST_BASIC_3D, command_buffer);
     if (!success) {
         return false;

@@ -26,6 +26,7 @@
 
 void *mem_alloc(size_t size);
 void mem_free(void *data);
+void mem_copy(void *dest, const void *src, size_t length);
 
 #endif
 

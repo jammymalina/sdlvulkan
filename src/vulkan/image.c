@@ -5,6 +5,7 @@
 #include "./tools/tools.h"
 #include "./context.h"
 #include "./memory/staging.h"
+#include "../utils/heap.h"
 
 static inline VkFormat texture_format_to_vk_format(texture_format format) {
     switch (format) {
@@ -278,7 +279,7 @@ bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, siz
             data[i + 1] = img_data[i];
         }
     } else {
-        memcpy(data, picture, size);
+        mem_copy(data, picture, size);
     }
 
     VkBufferImageCopy img_copy = {

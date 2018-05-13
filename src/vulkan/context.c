@@ -12,6 +12,7 @@
 #include "../window/config.h"
 #include "../renderer/config.h"
 #include "../renderer/shaders/shader_manager.h"
+#include "../vertex_management/vertex_manager.h"
 
 #ifdef DEBUG
     #include "./debug.h"
@@ -223,11 +224,11 @@ static bool create_device(vk_context *ctx) {
 
     VkPhysicalDeviceFeatures device_features = {};
     device_features.textureCompressionBC = VK_TRUE;
-    device_features.imageCubeArray = VK_TRUE;
-    device_features.depthClamp = VK_TRUE;
-    device_features.depthBiasClamp = VK_TRUE;
-    device_features.depthBounds = gpu->features.depthBounds;
-    device_features.fillModeNonSolid = VK_TRUE;
+    device_features.imageCubeArray       = VK_TRUE;
+    device_features.depthClamp           = VK_TRUE;
+    device_features.depthBiasClamp       = VK_TRUE;
+    device_features.depthBounds          = gpu->features.depthBounds;
+    device_features.fillModeNonSolid     = VK_TRUE;
 
     VkDeviceCreateInfo info = {
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -507,21 +508,21 @@ static bool create_render_pass(vk_context *ctx) {
 
     VkSubpassDependency subpass_dependencies[] = {
         {
-            .srcSubpass = VK_SUBPASS_EXTERNAL,
-            .dstSubpass = 0,
-            .srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .srcSubpass      = VK_SUBPASS_EXTERNAL,
+            .dstSubpass      = 0,
+            .srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT,
+            .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
         },
         {
-            .srcSubpass = 0,
-            .dstSubpass = VK_SUBPASS_EXTERNAL,
-            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+            .srcSubpass      = 0,
+            .dstSubpass      = VK_SUBPASS_EXTERNAL,
+            .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT,
             .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
         }
     };
@@ -606,10 +607,12 @@ bool init_vulkan(vk_context *ctx, SDL_Window *window) {
         create_render_pass(ctx) &&
         create_pipeline_cache(ctx) &&
         create_framebuffers(ctx) &&
-        init_ren_pm();
+        init_ren_pm() &&
+        init_vertex_cache();
 }
 
 void shutdown_vulkan(vk_context *ctx) {
+    destroy_vertex_cache();
     destroy_ren_pm();
     vk_destroy_stage_manager();
     vk_destroy_allocator();

@@ -405,6 +405,51 @@ static bool create_vertex_descriptions() {
         layout->input_state = vertex_input_info;
     }
 
+    {
+        vertex_layout *layout = &vertex_layouts[VERTEX_LAYOUT_POS_NOR_3];
+        layout->binding_desc_size = 1;
+        layout->binding_desc[0].binding = 0;
+        layout->binding_desc[0].stride = 3 * sizeof(float) + 3 * sizeof(float);
+        layout->binding_desc[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        layout->attribute_desc_size = 2;
+        // position
+        layout->attribute_desc[0].location = 0;
+        layout->attribute_desc[0].binding = layout->binding_desc[0].binding,
+        layout->attribute_desc[0].format = VK_FORMAT_R32G32B32_SFLOAT,
+        layout->attribute_desc[0].offset = 0;
+        // normal
+        layout->attribute_desc[1].location = 1;
+        layout->attribute_desc[1].binding = layout->binding_desc[0].binding,
+        layout->attribute_desc[1].format = VK_FORMAT_R32G32B32_SFLOAT,
+        layout->attribute_desc[1].offset = 3 * sizeof(float);
+    }
+
+    {
+        vertex_layout *layout = &vertex_layouts[VERTEX_LAYOUT_POS_NOR_UV_3];
+        layout->binding_desc_size = 1;
+        layout->binding_desc[0].binding = 0;
+        layout->binding_desc[0].stride = 3 * sizeof(float) + 3 * sizeof(float) + 2 * sizeof(float);
+        layout->binding_desc[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        layout->attribute_desc_size = 3;
+        // position
+        layout->attribute_desc[0].location = 0;
+        layout->attribute_desc[0].binding = layout->binding_desc[0].binding,
+        layout->attribute_desc[0].format = VK_FORMAT_R32G32B32_SFLOAT,
+        layout->attribute_desc[0].offset = 0;
+        // normal
+        layout->attribute_desc[1].location = 1;
+        layout->attribute_desc[1].binding = layout->binding_desc[0].binding,
+        layout->attribute_desc[1].format = VK_FORMAT_R32G32B32_SFLOAT,
+        layout->attribute_desc[1].offset = 3 * sizeof(float);
+        // uv
+        layout->attribute_desc[1].location = 2;
+        layout->attribute_desc[1].binding = layout->binding_desc[0].binding,
+        layout->attribute_desc[1].format = VK_FORMAT_R32G32_SFLOAT,
+        layout->attribute_desc[1].offset = 3 * sizeof(float) + 3 * sizeof(float);
+    }
+
     return true;
 }
 

@@ -28,6 +28,7 @@ typedef enum shader_type {
 typedef enum shader_instance_type {
     SHADER_INSTANCE_UNDEFINED = -1,
     SHADER_INSTANCE_TEST,
+    SHADER_INSTANCE_LAMBERT_DIFFUSE,
     SHADER_INSTANCES_TOTAL
 } shader_instance_type;
 

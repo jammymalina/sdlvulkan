@@ -22,7 +22,8 @@ typedef enum buffer_type {
     UNDEFINED_BUFFER,
     VERTEX_BUFFER,
     INDEX_BUFFER,
-    UNIFORM_BUFFER
+    UNIFORM_BUFFER,
+    VERTEX_INDEX_BUFFER
 } buffer_type;
 
 typedef struct vk_buffer {
@@ -34,7 +35,7 @@ typedef struct vk_buffer {
     VkBuffer buffer;
 } vk_buffer;
 
-bool copy_buffer_data(byte *dest, const byte *src, VkDeviceSize num_bytes);
+bool copy_buffer_data(buffer_type type, byte *dest, const byte *src, VkDeviceSize num_bytes);
 
 void init_vk_buffer(vk_buffer *buffer, buffer_type type);
 bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buffer_usage_type usage);

@@ -7,12 +7,8 @@
 #include "../../utils/heap.h"
 #include "../../logger/logger.h"
 
-bool copy_buffer_data(byte *dest, const byte *src, VkDeviceSize num_bytes) {
-    if (!is_16_byte_aligned(src) || !is_16_byte_aligned(dest)) {
-        log_error("Copy failed, destination data and src data must be aligned (16 bytes)");
-        return false;
-    }
-    memcpy(dest, src, num_bytes);
+bool copy_buffer_data(buffer_type type, byte *dest, const byte *src, VkDeviceSize num_bytes) {
+    mem_copy(dest, src, num_bytes);
     return true;
 }
 
@@ -41,6 +37,8 @@ static VkBufferUsageFlags buffer_type_to_vulkan_buffer_usage(buffer_type type) {
             return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         case UNIFORM_BUFFER:
             return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        case VERTEX_INDEX_BUFFER:
+            return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         default:
             return 0;
     }
@@ -49,10 +47,6 @@ static VkBufferUsageFlags buffer_type_to_vulkan_buffer_usage(buffer_type type) {
 bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buffer_usage_type usage) {
     if (buffer->buffer) {
         log_error("Buffer already allocated");
-        return false;
-    }
-    if (!is_16_byte_aligned(data)) {
-        log_error("Buffer data is not properly aligned (16 bytes)");
         return false;
     }
     if (alloc_size == 0) {
@@ -185,17 +179,14 @@ bool update_data_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize size, VkD
         log_error("Buffer is not allocated (vulkan handle is null)");
         return false;
     }
-    if (!is_16_byte_aligned(data)) {
-        log_error("Buffer data is not properly aligned (16 bytes)");
-        return false;
-    }
     if ((get_buffer_offset(buffer) & 15) != 0) {
         log_error("Invalid offset");
         return false;
     }
 
     if (buffer->usage == BU_DYNAMIC) {
-        return copy_buffer_data(buffer->allocation.data + get_buffer_offset(buffer) + offset, (const byte*) data, size);
+        return copy_buffer_data(buffer->type, buffer->allocation.data + get_buffer_offset(buffer) + offset,
+            (const byte*) data, size);
     }
 
     VkBuffer stage_buffer;
@@ -208,7 +199,7 @@ bool update_data_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize size, VkD
         return false;
     }
 
-    memcpy(stage_data, data, size);
+    mem_copy(stage_data, data, size);
 
     VkBufferCopy buffer_copy = {
         .srcOffset = stage_offset,
