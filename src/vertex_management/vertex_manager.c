@@ -1,7 +1,6 @@
 #include "./vertex_manager.h"
 
 #include "../utils/heap.h"
-#include "../geom/vertex.h"
 #include "../logger/logger.h"
 
 vertex_cache_manager vertex_cache;

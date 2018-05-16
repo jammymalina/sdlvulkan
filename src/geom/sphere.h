@@ -2,7 +2,7 @@
 #define GEOM_SPHERE_H
 
 #include <stdint.h>
-#include "./vertex.h"
+#include "./geom.h"
 
 void generate_sphere_geometry(vertex_float radius, vertex_float phi_start, vertex_float phi_length,
     vertex_float theta_start, vertex_float theta_length, uint32_t width_segments, uint32_t height_segments,

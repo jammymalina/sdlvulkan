@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "./vertex.h"
+#include "./geom.h"
 
 static inline void push_triangle_indices(uint32_t *index_head, uint32_t *indices, uint32_t index_count, bool clockwise) {
     if (!index_head) {
