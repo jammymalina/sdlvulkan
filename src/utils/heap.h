@@ -15,6 +15,7 @@
     } while (0)
 
 #define ALIGN(x, a) (((x) + ((a) - 1) ) & ~((a) - 1))
+#define ALIGN_MEM(x, a) ((((uintptr_t) (x)) + ((a) - 1) ) & ~(((uintptr_t) (a)) - 1))
 
 #define is_2_byte_aligned(ptr)   ((((uintptr_t) (ptr)) &   1) == 0)
 #define is_4_byte_aligned(ptr)   ((((uintptr_t) (ptr)) &   3) == 0)

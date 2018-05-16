@@ -32,7 +32,7 @@
         }                                                    \
     },                                                       \
     {                                                        \
-        .name = "test",                                      \
+        .name = "diffuse_test",                              \
         .instance = RENDER_PROGRAM_INSTANCE_LAMBERT_DIFFUSE, \
         .shader_instances = {                                \
             vert: SHADER_INSTANCE_LAMBERT_DIFFUSE,           \

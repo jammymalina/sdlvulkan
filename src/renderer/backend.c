@@ -184,13 +184,17 @@ static bool end_frame(render_backend *r) {
 
 static bool draw(render_backend *r) {
     VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
-    bool success = bind_program_instance(RENDER_PROGRAM_INSTANCE_TEST) &&
+    bool success = bind_program_instance(RENDER_PROGRAM_INSTANCE_LAMBERT_DIFFUSE) &&
         commit_current_program(RST_BASIC_3D, command_buffer);
     if (!success) {
         return false;
     }
 
-    vk_CmdDraw(command_buffer, 3, 1, 0, 0);
+    VkDeviceSize offset = 0;
+    vk_CmdBindVertexBuffers(command_buffer, 0, 1, &vertex_cache.static_buffer.buffer, &offset);
+    vk_CmdBindIndexBuffer(command_buffer, vertex_cache.static_buffer.buffer, 3 * 8 * sizeof(float), VK_INDEX_TYPE_UINT32);
+
+    vk_CmdDrawIndexed(command_buffer, 3, 1, 0, 0, 0);
 
     return true;
 }

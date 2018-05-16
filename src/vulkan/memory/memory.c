@@ -96,7 +96,7 @@ bool init_vk_block_memory(vk_block *block) {
 }
 
 static bool is_on_same_page(VkDeviceSize rA_offset, VkDeviceSize rA_size,
-    VkDeviceSize rB_offset, VkDeviceSize page_size) 
+    VkDeviceSize rB_offset, VkDeviceSize page_size)
 {
     if (!(rA_offset + rA_size <= rB_offset && rA_size > 0 && page_size > 0)) {
         return false;
@@ -135,7 +135,7 @@ static bool has_granularity_conflict(vk_allocation_type a, vk_allocation_type b)
     }
 }
 
-bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceSize granularity, 
+bool allocate_vk_block(vk_block *block, uint32_t size, uint32_t align, VkDeviceSize granularity,
     vk_allocation_type alloc_type, vk_allocation *allocation)
 {
     VkDeviceSize free_size = block->size - block->allocated;
@@ -255,7 +255,7 @@ void free_allocation_vk_block(vk_block *block, vk_allocation *allocation) {
 
     while (current->prev && current->prev->type == VULKAN_ALLOCATION_TYPE_FREE) {
         vk_chunk *prev = current->prev;
-        
+
         prev->next = current->next;
         if (current->next) {
             current->next->prev = prev;
@@ -273,7 +273,7 @@ void free_allocation_vk_block(vk_block *block, vk_allocation *allocation) {
         if (next->next) {
             next->next->prev = current;
         }
-        current->next = next->next; 
+        current->next = next->next;
 
         current->size += next->size;
 
@@ -309,7 +309,7 @@ void destroy_vk_block(vk_block *block) {
 }
 
 void print_vk_block(vk_block *block) {
-    size_t count = 0; 
+    size_t count = 0;
     for (vk_chunk *current = block->head; current != NULL; current = current->next) {
         count++;
     }
@@ -331,7 +331,7 @@ void print_vk_block(vk_block *block) {
         log_info("}");
     }
 
-    log_info("");	
+    log_info("");
 }
 
 // ALLOCATOR
@@ -344,8 +344,8 @@ vk_mem_allocator vk_allocator = {
 };
 
 bool init_vk_allocator(vk_mem_allocator *allocator) {
-    gpu_info *gpu = &context.gpus[context.selected_gpu];	
-    
+    gpu_info *gpu = &context.gpus[context.selected_gpu];
+
     allocator->device_local_memory_bytes = vk_mem_config.device_local_memory_MB * 1024 * 1024;
     allocator->host_visible_memory_bytes = vk_mem_config.host_visible_memory_MB * 1024 * 1024;
     allocator->buffer_image_granularity = gpu->props.limits.bufferImageGranularity;
@@ -360,7 +360,7 @@ bool init_vk_allocator(vk_mem_allocator *allocator) {
         allocator->garbage[i].elements = NULL;
         allocator->garbage[i].max_size = 0;
         allocator->garbage[i].size = 0;
-    }	
+    }
 
     for (size_t i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
         if (!init_vk_block_list(&allocator->blocks[i], vk_mem_config.max_block_count_per_memory_type)) {
@@ -412,7 +412,7 @@ uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usage_type 
             log_error("Unknown memory type");
             return UINT32_MAX;
     }
-    
+
     size_t best_fit = 0;
     int max_score = -1;
     for (size_t i = 0; i < mem_props->memoryTypeCount; i++) {
@@ -439,9 +439,9 @@ uint32_t find_memory_type_index(uint32_t memory_type_bits, vk_memory_usage_type 
     return max_score == -1 ? UINT32_MAX : best_fit;
 }
 
-bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result, 
-    uint32_t size, uint32_t align, uint32_t memory_type_bits, 
-    vk_memory_usage_type usage, vk_allocation_type alloc_type) 
+bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result,
+    uint32_t size, uint32_t align, uint32_t memory_type_bits,
+    vk_memory_usage_type usage, vk_allocation_type alloc_type)
 {
     uint32_t memory_type_index = find_memory_type_index(memory_type_bits, usage);
 
@@ -466,7 +466,7 @@ bool allocate_vk_allocator(vk_mem_allocator *allocator, vk_allocation *result,
 
     VkDeviceSize block_size = usage == VULKAN_MEMORY_USAGE_GPU_ONLY ?
         allocator->device_local_memory_bytes : allocator->host_visible_memory_bytes;
-        
+
     vk_block *block = mem_alloc(sizeof(vk_block));
     CHECK_ALLOC(block, "Block allocation failed");
     init_vk_block(block, memory_type_index, block_size, usage);
@@ -528,7 +528,7 @@ void destroy_vk_allocator(vk_mem_allocator *allocator) {
         vk_block_list *blocks = &allocator->blocks[i];
         size_t num_blocks = blocks->size;
         for (size_t j = 0; j < num_blocks; j++) {
-            destroy_vk_block(blocks->elements[i]);
+            destroy_vk_block(blocks->elements[j]);
         }
         destroy_vk_block_list(blocks);
     }
@@ -556,8 +556,8 @@ bool vk_init_allocator() {
     return init_vk_allocator(&vk_allocator);
 }
 
-bool vk_allocate(vk_allocation *result,  uint32_t size, uint32_t align, uint32_t memory_type_bits, 
-    vk_memory_usage_type usage, vk_allocation_type alloc_type) 
+bool vk_allocate(vk_allocation *result,  uint32_t size, uint32_t align, uint32_t memory_type_bits,
+    vk_memory_usage_type usage, vk_allocation_type alloc_type)
 {
     return allocate_vk_allocator(&vk_allocator, result, size, align, memory_type_bits, usage, alloc_type);
 }

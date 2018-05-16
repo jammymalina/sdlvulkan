@@ -19,6 +19,6 @@ void main() {
     interpolated_uv = uv;
 
     mat4 transform_matrix = mat4(1.0);
-    transform_matrix[3] = vec4(0, 0, 2.0, 1.0);
+    // transform_matrix[3] = vec4(0, 0, 2.0, 1.0);
     gl_Position = transform_matrix * vec4(position, 1.0);
 }

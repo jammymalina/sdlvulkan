@@ -11,5 +11,6 @@ void main() {
     vec4 light = normalize(vec4(0, 0 , 0, 1) - vertex_position);
     // reflectance based on lamberts law of cosine
     float theta = clamp(dot(n, light), 0.0, 1.0);
-    out_color = vec4(theta, theta, theta, 1.0);
+    // out_color = vec4(theta, theta, theta, 1.0);
+    out_color = vec4(1.0, 1.0, 1.0, 1.0);
 }

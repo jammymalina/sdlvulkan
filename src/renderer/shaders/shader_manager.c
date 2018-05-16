@@ -407,6 +407,7 @@ static bool create_vertex_descriptions() {
 
     {
         vertex_layout *layout = &vertex_layouts[VERTEX_LAYOUT_POS_NOR_3];
+        layout->input_state = vertex_input_info;
         layout->binding_desc_size = 1;
         layout->binding_desc[0].binding = 0;
         layout->binding_desc[0].stride = 3 * sizeof(float) + 3 * sizeof(float);
@@ -427,6 +428,7 @@ static bool create_vertex_descriptions() {
 
     {
         vertex_layout *layout = &vertex_layouts[VERTEX_LAYOUT_POS_NOR_UV_3];
+        layout->input_state = vertex_input_info;
         layout->binding_desc_size = 1;
         layout->binding_desc[0].binding = 0;
         layout->binding_desc[0].stride = 3 * sizeof(float) + 3 * sizeof(float) + 2 * sizeof(float);
@@ -444,10 +446,10 @@ static bool create_vertex_descriptions() {
         layout->attribute_desc[1].format = VK_FORMAT_R32G32B32_SFLOAT,
         layout->attribute_desc[1].offset = 3 * sizeof(float);
         // uv
-        layout->attribute_desc[1].location = 2;
-        layout->attribute_desc[1].binding = layout->binding_desc[0].binding,
-        layout->attribute_desc[1].format = VK_FORMAT_R32G32_SFLOAT,
-        layout->attribute_desc[1].offset = 3 * sizeof(float) + 3 * sizeof(float);
+        layout->attribute_desc[2].location = 2;
+        layout->attribute_desc[2].binding = layout->binding_desc[0].binding,
+        layout->attribute_desc[2].format = VK_FORMAT_R32G32_SFLOAT,
+        layout->attribute_desc[2].offset = 3 * sizeof(float) + 3 * sizeof(float);
     }
 
     return true;
