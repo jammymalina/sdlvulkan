@@ -61,7 +61,7 @@ void generate_plane_geometry(vertex_float width, vertex_float height,
                 push_triangle_indices(indices + i_count, triangle_indices, 6,
                     (geom_config_flag_bits & GEOM_CLOCKWISE_BIT) != 0);
             }
-            i_count++;
+            i_count += 6;
         }
     }
 

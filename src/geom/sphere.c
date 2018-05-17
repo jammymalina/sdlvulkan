@@ -34,6 +34,10 @@ void generate_sphere_geometry(vertex_float radius, vertex_float phi_start, verte
                     .uv = { u, v }
                 };
 
+                if (geom_config_flag_bits & GEOM_Y_AXIS_FLIP_BIT) {
+                    ver.normal[1] = -ver.normal[1];
+                }
+
                 if (geom_config_flag_bits & GEOM_TEX_COORD_FLIP_Y_BIT) {
                     ver.uv[1] = 1 - ver.uv[1];
                 }

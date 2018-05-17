@@ -8,6 +8,7 @@
 
 #define GEOM_CLOCKWISE_BIT        (UINT32_C(1) << 0)
 #define GEOM_TEX_COORD_FLIP_Y_BIT (UINT32_C(1) << 1)
+#define GEOM_Y_AXIS_FLIP_BIT      (UINT32_C(1) << 2) // default y axis points upwards
 
 #ifdef VERTEX_FLOAT_PRECISION
     typedef VERTEX_FLOAT_PRECISION vertex_float;
