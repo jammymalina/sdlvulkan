@@ -10,12 +10,12 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 uv;
 
 layout (location = 0) out vec4 interpolated_position;
-layout (location = 1) out vec4 interpolated_normal;
+layout (location = 1) out vec3 interpolated_normal;
 layout (location = 2) out vec2 interpolated_uv;
 
 void main() {
     interpolated_position = vec4(position, 1.0);
-    interpolated_normal = vec4(normal, 0.0);
+    interpolated_normal = vec3(normal);
     interpolated_uv = uv;
 
     mat4 transform_matrix = mat4(1.0);

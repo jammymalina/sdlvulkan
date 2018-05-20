@@ -2,8 +2,11 @@
 #define GEOM_H
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <math.h>
 
-#define GEOM_PI 3.14159265358979323846
+#define GEOM_PI  3.14159265358979323846
+#define GEOM_2PI (2 * GEOM_PI)
 #define GEOM_BIAS 0.00005
 
 #define GEOM_CLOCKWISE_BIT        (UINT32_C(1) << 0)
@@ -21,5 +24,24 @@ typedef struct vertex {
     vertex_float normal[3];
     vertex_float uv[2];
 } vertex;
+
+static inline uint32_t vertex_data_to_float_data(float *dest, vertex *vertices, uint32_t vertex_count) {
+    uint32_t j = 0;
+    for (uint32_t i = 0; i < vertex_count; i++) {
+        dest[j++] = vertices[i].position[0];
+        dest[j++] = vertices[i].position[1];
+        dest[j++] = vertices[i].position[2];
+
+        dest[j++] = vertices[i].normal[0];
+        dest[j++] = vertices[i].normal[1];
+        dest[j++] = vertices[i].normal[2];
+
+        dest[j++] = vertices[i].uv[0];
+        dest[j++] = vertices[i].uv[1];
+
+    }
+
+    return j;
+}
 
 #endif // GEOM_H

@@ -2,6 +2,7 @@
 #define GEOM_CIRCLE_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "./geom.h"
 
 void generate_circle_geometry(vertex_float radius, vertex_float theta_start, vertex_float theta_length,
