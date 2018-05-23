@@ -13,6 +13,8 @@
 #include "./renderer/backend.h"
 #include "./utils/file.h"
 
+#define MS_PER_UPDATE 16
+
 void quit(int rc);
 
 bool init_SDL() {
@@ -82,10 +84,16 @@ int main(int argc, char* args[]) {
     init_renderer();
 
     bool is_running = true;
+
+    uint32_t previous_time = SDL_GetTicks();
+    double lag = 0.0;
     while (is_running) {
-        if (!render()) {
-            is_running = false;
-        }
+        uint32_t current_time = SDL_GetTicks();
+        uint32_t elapsed_time = current_time - previous_time;
+
+        previous_time = current_time;
+        lag += elapsed_time;
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -98,6 +106,16 @@ int main(int argc, char* args[]) {
                     }
                     break;
             }
+        }
+
+        while (lag >= MS_PER_UPDATE) {
+            double delta = lag / MS_PER_UPDATE;
+            lag -= MS_PER_UPDATE;
+        }
+
+        bool success = render();
+        if (!success) {
+            is_running = false;
         }
     }
 

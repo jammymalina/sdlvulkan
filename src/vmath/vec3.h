@@ -1,0 +1,82 @@
+#ifndef VMATH_VEC3_H
+#define VMATH_VEC3_H
+
+#include "./vmath.h"
+
+typedef float vec3[3];
+
+static inline void scalar_vec3(vec3 v, float x) {
+    v[0] = x, v[1] = x, v[2] = x;
+}
+
+static inline void addv3(vec3 dest, const vec3 u, const vec3 v) {
+    dest[0] = u[0] + v[0];
+    dest[1] = u[1] + v[1];
+    dest[2] = u[2] + v[2];
+}
+
+static inline void subv3(vec3 dest, const vec3 u, const vec3 v) {
+    dest[0] = u[0] - v[0];
+    dest[1] = u[1] - v[1];
+    dest[2] = u[2] - v[2];
+}
+
+static inline void mulv3(vec3 dest, const vec3 u, const vec3 v) {
+    dest[0] = u[0] * v[0];
+    dest[1] = u[1] * v[1];
+    dest[2] = u[2] * v[2];
+}
+
+static inline void divv3(vec3 dest, const vec3 u, const vec3 v) {
+    dest[0] = u[0] / v[0];
+    dest[1] = u[1] / v[1];
+    dest[2] = u[2] / v[2];
+}
+
+static inline void addv3s(vec3 dest, const vec3 u, float x) {
+    dest[0] = u[0] + x;
+    dest[1] = u[1] + x;
+    dest[2] = u[2] + x;
+}
+
+static inline void subv3s(vec3 dest, const vec3 u, float x) {
+    dest[0] = u[0] - x;
+    dest[1] = u[1] - x;
+    dest[2] = u[2] - x;
+}
+
+static inline void mulv3s(vec3 dest, const vec3 u, float x) {
+    dest[0] = u[0] * x;
+    dest[1] = u[1] * x;
+    dest[2] = u[2] * x;
+}
+
+static inline void divv3s(vec3 dest, const vec3 u, const float x) {
+    dest[0] = u[0] / x;
+    dest[1] = u[1] / x;
+    dest[2] = u[2] / x;
+}
+
+static inline float dotv3(const vec3 u, const vec3 v) {
+    return u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+}
+
+static inline float lengthv3(const vec3 v) {
+    return sqrt(dotv3(v, v));
+}
+
+static inline void normalizev3(vec3 dest, const vec3 u) {
+    float len = lengthv3(u);
+    if (len <= EPSILON) {
+        return;
+    }
+    divv3s(dest, u, len);
+}
+
+static inline void crossv3(vec3 dest, const vec3 u, const vec3 v) {
+    dest[0] = u[1] * v[2] - v[1] * u[2];
+    dest[1] = u[2] * v[0] - v[2] * u[0];
+    dest[2] = u[0] * v[1] - v[0] * u[1];
+}
+
+#endif // VMATH_VEC3_H

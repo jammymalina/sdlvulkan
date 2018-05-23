@@ -192,9 +192,9 @@ static bool draw(render_backend *r) {
 
     VkDeviceSize offset = 0;
     vk_CmdBindVertexBuffers(command_buffer, 0, 1, &vertex_cache.static_buffer.buffer, &offset);
-    vk_CmdBindIndexBuffer(command_buffer, vertex_cache.static_buffer.buffer, 192, VK_INDEX_TYPE_UINT32);
+    vk_CmdBindIndexBuffer(command_buffer, vertex_cache.static_buffer.buffer, 2080, VK_INDEX_TYPE_UINT32);
 
-    vk_CmdDrawIndexed(command_buffer, 15, 1, 0, 0, 0);
+    vk_CmdDrawIndexed(command_buffer, 192, 1, 0, 0, 0);
 
     return true;
 }
