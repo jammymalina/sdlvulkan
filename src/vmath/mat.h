@@ -8,7 +8,7 @@
 #endif
 
 #ifdef VMATH_MATRIX_COLUMN_MAJOR_ORDER
-    #define get_mat(dest, row, column, height, width) (dest[(column) * (heights) + (row)])
+    #define get_mat(dest, row, column, height, width) (dest[(column) * (height) + (row)])
     #define set_mat(dest, row, column, value, height, width)                                    \
         do {                                                                                    \
             dest[(column) * (height) + (row)] = value;                                          \
