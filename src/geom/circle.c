@@ -25,7 +25,7 @@ void generate_circle_geometry(vertex_float radius, vertex_float theta_start, ver
     push_triangle_vertex(v_iter, &center);
     v_iter++;
 
-    for (uint32_t s = 0, i = 0; s < v_count - 1; s++, i += 3) {
+    for (uint32_t s = 0; s < v_count - 1; s++) {
         if (vertices) {
             vertex_float segment = theta_start + (((vertex_float) s) / segments) * theta_length;
 
