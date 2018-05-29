@@ -22,8 +22,11 @@ void generate_plane_geometry(vertex_float width, vertex_float height,
     vertex_float segment_width  = width  / width_segments;
     vertex_float segment_height = height / height_segments;
 
-    uint32_t v_count = 0;
-    uint32_t i_count = 0;
+    uint32_t v_count = (width_segments + 1) * (height_segments + 1);
+    uint32_t i_count = width_segments * height_segments * 6;
+
+    vertex *v_iter = vertices;
+    uint32_t *i_iter = indices;
 
     for (uint32_t iy = 0; iy < height_segments + 1; iy++) {
         vertex_float y = iy * segment_height - height_half;
@@ -40,9 +43,9 @@ void generate_plane_geometry(vertex_float width, vertex_float height,
                     ver.uv[1] = 1 - ver.uv[1];
                 }
 
-                push_triangle_vertex(vertices + v_count, &ver);
+                push_triangle_vertex(v_iter, &ver);
+                v_iter++;
             }
-            v_count++;
         }
     }
 
@@ -58,10 +61,10 @@ void generate_plane_geometry(vertex_float width, vertex_float height,
                     a, b, d,
                     b, c, d
                 };
-                push_triangle_indices(indices + i_count, triangle_indices, 6,
+                push_triangle_indices(i_iter, triangle_indices, 6,
                     (geom_config_flag_bits & GEOM_CLOCKWISE_BIT) != 0);
+                i_iter += 6;
             }
-            i_count += 6;
         }
     }
 

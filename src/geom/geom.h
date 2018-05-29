@@ -38,7 +38,6 @@ static inline uint32_t vertex_data_to_float_data(float *dest, vertex *vertices, 
 
         dest[j++] = vertices[i].uv[0];
         dest[j++] = vertices[i].uv[1];
-
     }
 
     return j;
