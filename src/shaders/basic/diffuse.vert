@@ -10,6 +10,23 @@ mat4 ortho(float left, float right, float bottom, float top) {
     return Result;
 }
 
+mat4 perspective(float fov, float aspect, float z_near, float z_far) {
+    mat4 Result = mat4(1.0);
+    float tan_half_fov = tan(0.5 * fov);
+    Result[0][0] = 1.0 / (aspect * tan_half_fov);
+    Result[1][1] = 1.0 / (tan_half_fov);
+    Result[2][2] = z_far / (z_near - z_far);
+    Result[2][3] = -1;
+    Result[3][2] = -(z_far * z_near) / (z_far - z_near);
+    return Result;
+}
+
+mat4 translate(vec3 d) {
+    mat4 Result = mat4(1.0);
+    Result[3] = vec4(d, 1.0);
+    return Result;
+}
+
 out gl_PerVertex {
     vec4 gl_Position;
 };
@@ -27,6 +44,7 @@ void main() {
     interpolated_normal = vec3(normal);
     interpolated_uv = uv;
 
-    mat4 transform_matrix = ortho(-2.0, 2.0, -1.5, 1.5);
+    // mat4 transform_matrix = ortho(-2.0, 2.0, -1.5, 1.5);
+    mat4 transform_matrix = perspective(90, 4.0 / 3.0, 0.0, 200.0) * translate(vec3(0.0, 0.0, -5.0));
     gl_Position = transform_matrix * vec4(position, 1.0);
 }
