@@ -35,6 +35,50 @@ void init_render_backend(render_backend *r) {
     init_backend_counters(&r->pc);
 }
 
+static void clear_frame(render_backend *r, uint32_t clear_bits, float rgba[4], uint32_t stencil_value) {
+    uint32_t num_attachments = 0;
+    VkClearAttachment attachments[2] = {
+        { 0 },
+        { 0 }
+    };
+
+    if (clear_bits & CLEAR_COLOR_BUFFER) {
+        VkClearAttachment *attachment = &attachments[num_attachments++];
+        attachment->aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        attachment->colorAttachment = 0;
+        VkClearColorValue *color = &attachment->clearValue.color;
+        color->float32[0] = rgba[0];
+        color->float32[1] = rgba[1];
+        color->float32[2] = rgba[2];
+        color->float32[3] = rgba[3];
+    }
+
+    if (clear_bits & (CLEAR_DEPTH_BUFFER | CLEAR_STENCIL_BUFFER)) {
+        VkClearAttachment *attachment = &attachments[num_attachments++];
+        if (clear_bits & CLEAR_DEPTH_BUFFER) {
+            attachment->aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        if (clear_bits & CLEAR_STENCIL_BUFFER) {
+            attachment->aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        attachment->clearValue.depthStencil.depth = 1.0;
+        attachment->clearValue.depthStencil.stencil = stencil_value;
+    }
+
+    VkClearRect clear_rect = {
+        .rect = {
+            .offset = {
+                .x = 0,
+                .y = 0
+            },
+            .extent = context.extent
+        },
+        .baseArrayLayer = 0,
+        .layerCount = 1
+    };
+    vk_CmdClearAttachments(context.command_buffers[r->current_frame], num_attachments, attachments, 1, &clear_rect);
+}
+
 static bool start_frame(render_backend *r) {
     CHECK_VK(vk_AcquireNextImageKHR(context.device, context.swapchain, UINT64_MAX,
         context.acquire_semaphores[r->current_frame], VK_NULL_HANDLE, &r->current_swap_index));
@@ -99,12 +143,6 @@ static bool start_frame(render_backend *r) {
 
     vk_CmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
 
-    VkClearValue clear_values[2] = {};
-    VkClearColorValue clear_color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-    VkClearDepthStencilValue clear_depth = { 1.0f, 0 };
-    clear_values[0].color= clear_color;
-    clear_values[1].depthStencil = clear_depth;
-
     VkRenderPassBeginInfo render_pass_begin_info = {
         .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext       = NULL,
@@ -117,12 +155,16 @@ static bool start_frame(render_backend *r) {
             },
             .extent = context.extent
         },
-        .clearValueCount = 2,
-        .pClearValues    = clear_values,
+        .clearValueCount = 0,
+        .pClearValues    = NULL,
     };
 
     vk_CmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     vk_CmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, query_pool, r->query_index[r->current_frame]);
+
+    float clear_color[4] = { 0.0, 0.0, 0.0, 0.0 };
+    clear_frame(r, CLEAR_COLOR_BUFFER | CLEAR_DEPTH_BUFFER, clear_color, 0);
+
     r->query_index[r->current_frame]++;
 
     return true;

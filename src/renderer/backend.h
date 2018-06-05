@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include "../vulkan/config.h"
 
+#define CLEAR_COLOR_BUFFER   1
+#define CLEAR_DEPTH_BUFFER   2
+#define CLEAR_STENCIL_BUFFER 4
+
 typedef struct backend_counters {
     uint64_t gpu_microsec;
 } backend_counters;
