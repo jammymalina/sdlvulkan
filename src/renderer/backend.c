@@ -156,7 +156,7 @@ static bool start_frame(render_backend *r) {
             .extent = context.extent
         },
         .clearValueCount = 0,
-        .pClearValues    = NULL,
+        .pClearValues    = NULL
     };
 
     vk_CmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);

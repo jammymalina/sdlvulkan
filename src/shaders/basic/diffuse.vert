@@ -45,6 +45,6 @@ void main() {
     interpolated_uv = uv;
 
     // mat4 transform_matrix = ortho(-2.0, 2.0, -1.5, 1.5);
-    mat4 transform_matrix = perspective(90, 4.0 / 3.0, 0.0, 200.0) * translate(vec3(0.0, 0.0, -5.0));
+    mat4 transform_matrix = perspective(90, 4.0 / 3.0, 0.0, 200.0) * translate(vec3(2.0, -3.0, -3.0));
     gl_Position = transform_matrix * vec4(position, 1.0);
 }
