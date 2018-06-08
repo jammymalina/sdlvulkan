@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "./config.h"
 #include "./vertex_manager.h"
+#include "../geom/geom.h"
 
 #define MESH_VERTEX_COUNT(x) ((x) >> UINT64_C(32))
 #define MESH_INDEX_COUNT(x)  ((x) & ((1 << 32) - 1))
@@ -11,11 +13,13 @@
 typedef enum mesh_geometry_type {
     PLANE_GEOMETRY,
     CIRCLE_GEOMETRY,
-    SPHERE_GEOMETRY
+    SPHERE_GEOMETRY,
+    GEOMETRY_TYPE_COUNT
 } mesh_geometry_type;
 
 typedef struct mesh_geometry_config {
     mesh_geometry_type type;
+    uint32_t geom_config_flag_bits;
     union {
         float width;
         float radius;
@@ -39,12 +43,14 @@ typedef struct mesh_geometry_config {
 } mesh_geometry_config;
 
 typedef struct mesh_loader_tool {
-    float *vertex_buffer;
+    vertex *vertex_buffer;
     uint32_t vertex_buffer_size;
 
     uint32_t *index_buffer;
     uint32_t index_buffer_size;
 } mesh_loader_tool;
+
+typedef void (*generate_mesh_geometry_function)(const mesh_geometry_config*, uint32_t*, vertex*, uint32_t*, uint32_t*);
 
 bool init_mesh_loader_tool(mesh_loader_tool *mesh_tool, uint32_t vertex_buffer_size, uint32_t index_buffer_size);
 uint64_t load_mesh_geometry_mesh_loader_tool(mesh_loader_tool *mesh_tool, const mesh_geometry_config *conf);

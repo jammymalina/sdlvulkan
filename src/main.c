@@ -12,6 +12,7 @@
 #include "./vulkan/memory/memory.h"
 #include "./renderer/backend.h"
 #include "./utils/file.h"
+#include "./vertex_management/mesh_loader.h"
 
 #define MS_PER_UPDATE 16
 
@@ -31,12 +32,21 @@ bool init_SDL() {
     return true;
 }
 
+bool init(vk_context *ctx, SDL_Window *window) {
+    return init_vulkan(ctx, window) &&
+        init_mesh_loader(
+            vertex_management_config.mesh_loader_config.max_vertex_buffer_size,
+            vertex_management_config.mesh_loader_config.max_index_buffer_size
+        );
+}
+
 void shutdown_SDL() {
     SDL_Quit();
 }
 
 void quit(int rc) {
     shutdown_vulkan(&context);
+    destroy_mesh_loader();
     shutdown_SDL();
     exit(rc);
 }
@@ -78,7 +88,7 @@ int main(int argc, char* args[]) {
     log_info("Draw Size: %d, %d", render_config.width, render_config.height);
     log_info("Screen BPP: %d", SDL_BITSPERPIXEL(mode.format));
 
-    if (!init_vulkan(&context, window)) {
+    if (!init(&context, window)) {
         quit(EXIT_FAILURE);
     }
     init_renderer();

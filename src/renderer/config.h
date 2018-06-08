@@ -1,8 +1,6 @@
 #ifndef RENDERER_CONFIG_H
 #define RENDERER_CONFIG_H
 
-#include <stdint.h>
-
 #define MAX_DECRIPTOR_SETS 100
 
 typedef struct renderer_configuration {
