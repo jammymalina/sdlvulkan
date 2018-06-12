@@ -12,6 +12,7 @@
 #include "./vulkan/memory/memory.h"
 #include "./renderer/backend.h"
 #include "./utils/file.h"
+#include "./input/input.h"
 #include "./vertex_management/mesh_loader.h"
 
 #define MS_PER_UPDATE 16
@@ -37,7 +38,8 @@ bool init(vk_context *ctx, SDL_Window *window) {
         init_mesh_loader(
             vertex_management_config.mesh_loader_config.max_vertex_buffer_size,
             vertex_management_config.mesh_loader_config.max_index_buffer_size
-        );
+        ) &&
+        init_input();
 }
 
 void shutdown_SDL() {
@@ -116,6 +118,7 @@ int main(int argc, char* args[]) {
                     }
                     break;
             }
+            update_input(&event);
         }
 
         while (lag >= MS_PER_UPDATE) {

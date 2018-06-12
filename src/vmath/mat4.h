@@ -3,6 +3,7 @@
 
 #include "./mat.h"
 #include "./vec4.h"
+#include "./mat3.h"
 
 typedef float mat4[16];
 
@@ -25,6 +26,22 @@ static inline void diagonal_mat4(mat4 m, float x) {
 
 static inline void identity_mat4(mat4 m) {
     diagonal_mat4(m, 1.0);
+}
+
+static inline void mat3_to_mat4(mat4 dest, const mat3 m) {
+    identity_mat4(dest);
+
+    set_mat4(dest, 0, 0, get_mat3(m, 0, 0));
+    set_mat4(dest, 0, 1, get_mat3(m, 0, 1));
+    set_mat4(dest, 0, 2, get_mat3(m, 0, 2));
+
+    set_mat4(dest, 1, 0, get_mat3(m, 1, 0));
+    set_mat4(dest, 1, 1, get_mat3(m, 1, 1));
+    set_mat4(dest, 1, 2, get_mat3(m, 1, 2));
+
+    set_mat4(dest, 2, 0, get_mat3(m, 2, 0));
+    set_mat4(dest, 2, 1, get_mat3(m, 2, 1));
+    set_mat4(dest, 2, 2, get_mat3(m, 2, 2));
 }
 
 static inline void get_row_mat4(vec4 dest, const mat4 m, size_t row) {
