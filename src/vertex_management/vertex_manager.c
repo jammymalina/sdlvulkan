@@ -1,5 +1,6 @@
 #include "./vertex_manager.h"
 
+#include "./mesh_loader.h"
 #include "../utils/heap.h"
 #include "../logger/logger.h"
 #include "../geom/circle.h"
@@ -21,11 +22,9 @@ bool init_vertex_manager(vertex_cache_manager *vc) {
     generate_circle_geometry(1.0, 0, GEOM_2PI, 64, GEOM_Y_AXIS_FLIP_BIT, &circle_vertex_count,
         circle_vertices, &circe_index_count, indices);
 
-    float vertex_data[520];
-    vertex_data_to_float_data(vertex_data, circle_vertices, 65);
-    uint32_t offset = ALIGN(sizeof(vertex_data), 16);
+    uint32_t offset = ALIGN(sizeof(circle_vertices), 16);
 
-    mem_copy(vc->static_data, vertex_data, sizeof(vertex_data));
+    mem_copy(vc->static_data, circle_vertices, sizeof(circle_vertices));
     mem_copy(vc->static_data + offset, indices, sizeof(indices));
     init_vk_buffer(&vc->static_buffer, VERTEX_INDEX_BUFFER);
     alloc_vk_buffer(&vc->static_buffer, vc->static_data, 20000, BU_STATIC);

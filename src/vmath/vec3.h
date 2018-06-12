@@ -5,6 +5,8 @@
 
 typedef float vec3[3];
 
+#define VEC3_COPY(v) { v[0], v[1], v[2] }
+
 static inline void scalar_vec3(vec3 v, float x) {
     v[0] = x, v[1] = x, v[2] = x;
 }
@@ -68,6 +70,7 @@ static inline float lengthv3(const vec3 v) {
 static inline void normalizev3(vec3 dest, const vec3 u) {
     const float len = lengthv3(u);
     if (len <= EPSILON) {
+        dest[0] = 0, dest[1] = 0, dest[2] = 0;
         return;
     }
     divv3s(dest, u, len);

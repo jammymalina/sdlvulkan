@@ -5,6 +5,8 @@
 
 typedef float vec4[4];
 
+#define VEC4_COPY(v) { v[0], v[1], v[2], v[3] }
+
 static inline void scalar_vec4(vec4 v, float x) {
     v[0] = x, v[1] = x, v[2] = x, v[3] = x;
 }
@@ -76,6 +78,7 @@ static inline float lengthv4(const vec4 v) {
 static inline void normalizev4(vec4 dest, const vec4 u) {
     const float len = lengthv4(u);
     if (len <= EPSILON) {
+        dest[0] = 0, dest[1] = 0, dest[2] = 0, dest[3] = 0;
         return;
     }
     divv4s(dest, u, len);
