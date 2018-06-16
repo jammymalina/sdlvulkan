@@ -176,7 +176,7 @@ static bool create_vk_sampler(vk_image *image) {
             break;
     }
 
-    CHECK_VK(vk_CreateSampler(context.device, &sampler_info, NULL, &image->sampler));
+    CHECK_VK(vkCreateSampler(context.device, &sampler_info, NULL, &image->sampler));
 
     return true;
 }
@@ -220,10 +220,10 @@ bool alloc_image(vk_image *image) {
         .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
     };
 
-    CHECK_VK(vk_CreateImage(context.device, &image_info, NULL, &image->image));
+    CHECK_VK(vkCreateImage(context.device, &image_info, NULL, &image->image));
 
     VkMemoryRequirements memory_requirements;
-    vk_GetImageMemoryRequirements(context.device, image->image, &memory_requirements);
+    vkGetImageMemoryRequirements(context.device, image->image, &memory_requirements);
 
     bool success = vk_allocate(&image->allocation, memory_requirements.size, memory_requirements.alignment,
         memory_requirements.memoryTypeBits, VULKAN_MEMORY_USAGE_GPU_ONLY, VULKAN_ALLOCATION_TYPE_IMAGE_OPTIMAL);
@@ -232,7 +232,7 @@ bool alloc_image(vk_image *image) {
         return false;
     }
 
-    CHECK_VK(vk_BindImageMemory(context.device, image->image, image->allocation.device_memory,
+    CHECK_VK(vkBindImageMemory(context.device, image->image, image->allocation.device_memory,
         image->allocation.offset));
 
     VkImageViewCreateInfo view_info = {
@@ -253,7 +253,7 @@ bool alloc_image(vk_image *image) {
         }
     };
 
-    CHECK_VK(vk_CreateImageView(context.device, &view_info, NULL, &image->view));
+    CHECK_VK(vkCreateImageView(context.device, &view_info, NULL, &image->view));
 
     return true;
 }
@@ -323,15 +323,15 @@ bool sub_image_upload(vk_image *image, size_t mip_level, size_t x, size_t y, siz
         }
     };
 
-    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
         NULL, 0, NULL, 1, &barrier);
-    vk_CmdCopyBufferToImage(command_buffer, buffer, image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &img_copy);
+    vkCmdCopyBufferToImage(command_buffer, buffer, image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &img_copy);
 
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    vk_CmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0,
+    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0,
         NULL, 0, NULL, 1, &barrier);
 
     image->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -344,12 +344,12 @@ void destroy_image(vk_image *image) {
         return;
     }
     if (image->image) {
-        vk_DestroyImage(context.device, image->image, NULL);
+        vkDestroyImage(context.device, image->image, NULL);
     }
     if (image->view) {
-        vk_DestroyImageView(context.device, image->view, NULL);
+        vkDestroyImageView(context.device, image->view, NULL);
     }
     if (image->sampler) {
-        vk_DestroySampler(context.device, image->sampler, NULL);
+        vkDestroySampler(context.device, image->sampler, NULL);
     }
 }

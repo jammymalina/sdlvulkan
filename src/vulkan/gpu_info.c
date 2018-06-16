@@ -26,61 +26,61 @@ bool init_gpu_info_props(gpu_info *gpu, VkPhysicalDevice device, VkSurfaceKHR su
     
     // Queue family props
     uint32_t num_queues = 0;
-    vk_GetPhysicalDeviceQueueFamilyProperties(gpu->device, &num_queues, NULL);
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu->device, &num_queues, NULL);
     CHECK_VK_VAL(num_queues > 0, "No queue family props");
     
     gpu->queue_family_props = mem_alloc(num_queues * sizeof(VkQueueFamilyProperties));
     CHECK_ALLOC(gpu->queue_family_props, "Allocation fail");
     
-    vk_GetPhysicalDeviceQueueFamilyProperties(gpu->device, &num_queues, 
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu->device, &num_queues, 
         gpu->queue_family_props);
     CHECK_VK_VAL(num_queues > 0, "No queue family props");
     gpu->queue_family_props_size = num_queues;
     
     // Extensions
     uint32_t num_extensions = 0; 
-    CHECK_VK(vk_EnumerateDeviceExtensionProperties(gpu->device, NULL, &num_extensions, NULL));
+    CHECK_VK(vkEnumerateDeviceExtensionProperties(gpu->device, NULL, &num_extensions, NULL));
     CHECK_VK_VAL(num_extensions > 0, "No device extensions");
 
     gpu->extension_props = mem_alloc(num_extensions * sizeof(VkExtensionProperties));
     CHECK_ALLOC(gpu->extension_props, "Allocation fail");
 
-    CHECK_VK(vk_EnumerateDeviceExtensionProperties(gpu->device, NULL, &num_extensions,
+    CHECK_VK(vkEnumerateDeviceExtensionProperties(gpu->device, NULL, &num_extensions,
         gpu->extension_props));
     CHECK_VK_VAL(num_extensions > 0, "No device extensions");
     gpu->extension_props_size = num_extensions;
 
     // Surface formats
     uint32_t num_formats = 0;
-    CHECK_VK(vk_GetPhysicalDeviceSurfaceFormatsKHR(gpu->device, surface,
+    CHECK_VK(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->device, surface,
         &num_formats, NULL));
     CHECK_VK_VAL(num_formats > 0, "No surface formats");
 
     gpu->surface_formats = mem_alloc(num_formats * sizeof(VkSurfaceFormatKHR));
     CHECK_ALLOC(gpu->surface_formats, "Allocation fail");
 
-    CHECK_VK(vk_GetPhysicalDeviceSurfaceFormatsKHR(gpu->device, surface,
+    CHECK_VK(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu->device, surface,
         &num_formats, gpu->surface_formats));
     CHECK_VK_VAL(num_formats > 0, "No surface formats");
     gpu->surface_formats_size = num_formats;
     
     uint32_t num_present_modes = 0;
-    CHECK_VK(vk_GetPhysicalDeviceSurfacePresentModesKHR(gpu->device, surface, 
+    CHECK_VK(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu->device, surface, 
         &num_present_modes, NULL));
     CHECK_VK_VAL(num_present_modes > 0, "No surface present modes");
 
     gpu->present_modes = mem_alloc(num_present_modes * sizeof(VkPresentModeKHR));
     CHECK_ALLOC(gpu->present_modes, "Allocation fail");
     
-    CHECK_VK(vk_GetPhysicalDeviceSurfacePresentModesKHR(gpu->device, surface, 
+    CHECK_VK(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu->device, surface, 
         &num_present_modes, gpu->present_modes));
     CHECK_VK_VAL(num_present_modes > 0, "No surface present modes");
     gpu->present_modes_size = num_present_modes;
 
-    CHECK_VK(vk_GetPhysicalDeviceSurfaceCapabilitiesKHR(gpu->device, surface, &gpu->surface_caps));
-    vk_GetPhysicalDeviceMemoryProperties(gpu->device, &gpu->mem_props);
-    vk_GetPhysicalDeviceProperties(gpu->device, &gpu->props);
-    vk_GetPhysicalDeviceFeatures(gpu->device, &gpu->features);
+    CHECK_VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu->device, surface, &gpu->surface_caps));
+    vkGetPhysicalDeviceMemoryProperties(gpu->device, &gpu->mem_props);
+    vkGetPhysicalDeviceProperties(gpu->device, &gpu->props);
+    vkGetPhysicalDeviceFeatures(gpu->device, &gpu->features);
     
     return true;
 }
@@ -170,7 +170,7 @@ bool choose_supported_format(gpu_info *gpu, VkFormat *result, VkFormat *formats,
         VkFormat format = formats[i];
 
         VkFormatProperties props;
-        vk_GetPhysicalDeviceFormatProperties(gpu->device, format, &props);
+        vkGetPhysicalDeviceFormatProperties(gpu->device, format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
             *result = format;
@@ -224,7 +224,7 @@ bool is_gpu_suitable_for_graphics(gpu_info *gpu, VkSurfaceKHR surface,
         }
 
         VkBool32 support_present = VK_FALSE;
-        CHECK_VK(vk_GetPhysicalDeviceSurfaceSupportKHR(gpu->device, i, surface, &support_present));
+        CHECK_VK(vkGetPhysicalDeviceSurfaceSupportKHR(gpu->device, i, surface, &support_present));
         if (support_present) {
             *present_index = i;
             present_index_found = true;

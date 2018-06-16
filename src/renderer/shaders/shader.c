@@ -161,9 +161,9 @@ bool init_shader_from_file(shader *s, shader_instance_type instance, const char 
         .pCode = shader_code
     };
 
-    VkResult result = vk_CreateShaderModule(context.device, &shader_info, NULL, &s->module);
+    VkResult result = vkCreateShaderModule(context.device, &shader_info, NULL, &s->module);
     if (result != VK_SUCCESS) {
-        log_error("VK error: %s - %s", "vk_CreateShaderModule", vulkan_result_to_string(result));
+        log_error("VK error: %s - %s", "vkCreateShaderModule", vulkan_result_to_string(result));
         mem_free(shader_code);
         return true;
     }
@@ -175,7 +175,7 @@ bool init_shader_from_file(shader *s, shader_instance_type instance, const char 
 
 void destroy_shader(shader *s) {
     if (s->module) {
-        vk_DestroyShaderModule(context.device, s->module, NULL);
+        vkDestroyShaderModule(context.device, s->module, NULL);
         s->module = VK_NULL_HANDLE;
     }
 }

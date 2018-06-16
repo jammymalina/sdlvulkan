@@ -76,11 +76,11 @@ static void clear_frame(render_backend *r, uint32_t clear_bits, float rgba[4], u
         .baseArrayLayer = 0,
         .layerCount = 1
     };
-    vk_CmdClearAttachments(context.command_buffers[r->current_frame], num_attachments, attachments, 1, &clear_rect);
+    vkCmdClearAttachments(context.command_buffers[r->current_frame], num_attachments, attachments, 1, &clear_rect);
 }
 
 static bool start_frame(render_backend *r) {
-    CHECK_VK(vk_AcquireNextImageKHR(context.device, context.swapchain, UINT64_MAX,
+    CHECK_VK(vkAcquireNextImageKHR(context.device, context.swapchain, UINT64_MAX,
         context.acquire_semaphores[r->current_frame], VK_NULL_HANDLE, &r->current_swap_index));
     vk_empty_garbage();
     vk_flush_stage();
@@ -95,7 +95,7 @@ static bool start_frame(render_backend *r) {
     size_t results_byte_size = sizeof(uint64_t) * NUM_TIMESTAMP_QUERIES;
 
     if (r->query_index[r->current_frame] > 0) {
-        vk_GetQueryPoolResults(context.device, query_pool, 0, 2, results_byte_size,
+        vkGetQueryPoolResults(context.device, query_pool, 0, 2, results_byte_size,
             results, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
         gpu_info *gpu = &context.gpus[context.selected_gpu];
@@ -117,7 +117,7 @@ static bool start_frame(render_backend *r) {
         .pInheritanceInfo = NULL
     };
 
-    CHECK_VK(vk_BeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+    CHECK_VK(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 
     VkViewport viewport = {
         x: 0,
@@ -127,7 +127,7 @@ static bool start_frame(render_backend *r) {
         minDepth: 0.0f,
         maxDepth: 1.0f
     };
-    vk_CmdSetViewport(command_buffer, 0, 1, &viewport);
+    vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
     VkRect2D scissor = {
         offset: {
@@ -139,9 +139,9 @@ static bool start_frame(render_backend *r) {
             height: viewport.height
         }
     };
-    vk_CmdSetScissor(command_buffer, 0, 1, &scissor);
+    vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    vk_CmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
+    vkCmdResetQueryPool(command_buffer, query_pool, 0, NUM_TIMESTAMP_QUERIES);
 
     VkRenderPassBeginInfo render_pass_begin_info = {
         .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -159,8 +159,8 @@ static bool start_frame(render_backend *r) {
         .pClearValues    = NULL
     };
 
-    vk_CmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-    vk_CmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, query_pool, r->query_index[r->current_frame]);
+    vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, query_pool, r->query_index[r->current_frame]);
 
     float clear_color[4] = { 0.0, 0.0, 0.0, 0.0 };
     clear_frame(r, CLEAR_COLOR_BUFFER | CLEAR_DEPTH_BUFFER, clear_color, 0);
@@ -173,14 +173,14 @@ static bool start_frame(render_backend *r) {
 static bool end_frame(render_backend *r) {
     VkCommandBuffer command_buffer = context.command_buffers[r->current_frame];
 
-    vk_CmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, context.query_pools[r->current_frame],
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, context.query_pools[r->current_frame],
         r->query_index[r->current_frame]);
 
-    vk_CmdEndRenderPass(command_buffer);
+    vkCmdEndRenderPass(command_buffer);
 
     r->query_index[r->current_frame]++;
 
-    CHECK_VK(vk_EndCommandBuffer(command_buffer));
+    CHECK_VK(vkEndCommandBuffer(command_buffer));
     r->command_buffer_recorded[r->current_frame] = true;
 
     VkSemaphore *acquire_semaphore = &context.acquire_semaphores[r->current_frame];
@@ -200,7 +200,7 @@ static bool end_frame(render_backend *r) {
         .pSignalSemaphores = render_complete_semaphore
     };
 
-    CHECK_VK(vk_QueueSubmit(context.graphics_queue, 1, &submit_info, context.command_buffer_fences[r->current_frame]));
+    CHECK_VK(vkQueueSubmit(context.graphics_queue, 1, &submit_info, context.command_buffer_fences[r->current_frame]));
     if (!block_swap_buffers_render_backend(&renderer)) {
         log_error("Unable to swap buffers");
         return false;
@@ -217,7 +217,7 @@ static bool end_frame(render_backend *r) {
         .pResults = NULL
     };
 
-    CHECK_VK(vk_QueuePresentKHR(context.present_queue, &present_info));
+    CHECK_VK(vkQueuePresentKHR(context.present_queue, &present_info));
 
     r->current_frame = (r->current_frame + 1) % NUM_FRAME_DATA;
 
@@ -233,10 +233,10 @@ static bool draw(render_backend *r) {
     }
 
     VkDeviceSize offset = 0;
-    vk_CmdBindVertexBuffers(command_buffer, 0, 1, &vertex_cache.static_buffer.buffer, &offset);
-    vk_CmdBindIndexBuffer(command_buffer, vertex_cache.static_buffer.buffer, 2080, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_cache.static_buffer.buffer, &offset);
+    vkCmdBindIndexBuffer(command_buffer, vertex_cache.static_buffer.buffer, 2080, VK_INDEX_TYPE_UINT32);
 
-    vk_CmdDrawIndexed(command_buffer, 192, 1, 0, 0, 0);
+    vkCmdDrawIndexed(command_buffer, 192, 1, 0, 0, 0);
 
     return true;
 }
@@ -267,8 +267,8 @@ bool block_swap_buffers_render_backend(render_backend *r) {
     if (!r->command_buffer_recorded[r->current_frame]) {
         return true;
     }
-    CHECK_VK(vk_WaitForFences(context.device, 1, &context.command_buffer_fences[r->current_frame], VK_TRUE, UINT64_MAX));
-    CHECK_VK(vk_ResetFences(context.device, 1, &context.command_buffer_fences[r->current_frame]));
+    CHECK_VK(vkWaitForFences(context.device, 1, &context.command_buffer_fences[r->current_frame], VK_TRUE, UINT64_MAX));
+    CHECK_VK(vkResetFences(context.device, 1, &context.command_buffer_fences[r->current_frame]));
     r->command_buffer_recorded[r->current_frame] = false;
 
     return true;

@@ -20,7 +20,7 @@ bool check_validation_layers(const char **names, uint32_t names_size) {
 VkLayerProperties *get_available_validation_layers(uint32_t *layers_size) {
     *layers_size = 0;
     uint32_t count = 0;
-    VkResult r = vk_EnumerateInstanceLayerProperties(&count, NULL);
+    VkResult r = vkEnumerateInstanceLayerProperties(&count, NULL);
 
     if (r != VK_SUCCESS) {
         log_error("Unable to get validation layers: %s", vulkan_result_to_string(r));
@@ -31,7 +31,7 @@ VkLayerProperties *get_available_validation_layers(uint32_t *layers_size) {
     }
 
     VkLayerProperties *validation_layers = mem_alloc(count * sizeof(VkLayerProperties));
-    r = vk_EnumerateInstanceLayerProperties(&count, validation_layers);
+    r = vkEnumerateInstanceLayerProperties(&count, validation_layers);
 
     if (!validation_layers) {
         log_error("Unable to allocate validation layers");

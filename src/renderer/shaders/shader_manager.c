@@ -113,7 +113,7 @@ static bool create_descriptor_set_layout(render_program_manager *m, render_progr
         .bindingCount = bindings_count,
         .pBindings = bindings_count == 0 ? NULL : layout_bindings
     };
-    CHECK_VK(vk_CreateDescriptorSetLayout(context.device, &descriptor_set_info, NULL, &prog->descriptor_set_layout));
+    CHECK_VK(vkCreateDescriptorSetLayout(context.device, &descriptor_set_info, NULL, &prog->descriptor_set_layout));
 
     return true;
 }
@@ -128,7 +128,7 @@ static bool create_pipeline_layout(render_program *prog) {
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = NULL
     };
-    CHECK_VK(vk_CreatePipelineLayout(context.device, &pipeline_layout_info, NULL, &prog->pipeline_layout));
+    CHECK_VK(vkCreatePipelineLayout(context.device, &pipeline_layout_info, NULL, &prog->pipeline_layout));
 
     return true;
 }
@@ -253,7 +253,7 @@ static bool create_pipeline(VkPipeline *pipeline, uint64_t state_bits, render_pr
     };
 
     *pipeline = VK_NULL_HANDLE;
-    CHECK_VK(vk_CreateGraphicsPipelines(context.device, context.pipeline_cache, 1, &pipeline_info, NULL, pipeline));
+    CHECK_VK(vkCreateGraphicsPipelines(context.device, context.pipeline_cache, 1, &pipeline_info, NULL, pipeline));
 
     return true;
 }
@@ -288,7 +288,7 @@ static bool get_pipeline_render_program(pipeline_state *dest, render_program *pr
             }
         }
         if (prog->pipeline_cache[index].pipeline) {
-            vk_DestroyPipeline(context.device, prog->pipeline_cache[index].pipeline, NULL);
+            vkDestroyPipeline(context.device, prog->pipeline_cache[index].pipeline, NULL);
         }
     } else {
         index = prog->pipeline_cache_size;
@@ -481,7 +481,7 @@ static bool create_descriptor_pools(render_program_manager *m) {
     };
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-        CHECK_VK(vk_CreateDescriptorPool(context.device, &pool_info, NULL, &m->descriptor_pools[i]));
+        CHECK_VK(vkCreateDescriptorPool(context.device, &pool_info, NULL, &m->descriptor_pools[i]));
     }
 
     return true;
@@ -532,17 +532,17 @@ void init_render_program(render_program *prog) {
 
 void destroy_render_program(render_program *prog) {
     if (prog->pipeline_layout) {
-        vk_DestroyPipelineLayout(context.device, prog->pipeline_layout, NULL);
+        vkDestroyPipelineLayout(context.device, prog->pipeline_layout, NULL);
         prog->pipeline_layout = VK_NULL_HANDLE;
     }
     if (prog->descriptor_set_layout) {
-        vk_DestroyDescriptorSetLayout(context.device, prog->descriptor_set_layout, NULL);
+        vkDestroyDescriptorSetLayout(context.device, prog->descriptor_set_layout, NULL);
         prog->descriptor_set_layout = VK_NULL_HANDLE;
     }
     for (size_t i = 0; i < prog->pipeline_cache_size; i++) {
         pipeline_state *ps = &prog->pipeline_cache[i];
         if (ps->pipeline) {
-            vk_DestroyPipeline(context.device, ps->pipeline, NULL);
+            vkDestroyPipeline(context.device, ps->pipeline, NULL);
             ps->pipeline = VK_NULL_HANDLE;
         }
     }
@@ -604,7 +604,7 @@ bool start_frame_render_program_manager(render_program_manager *m) {
     m->current_descriptor_set = 0;
     m->current_parameter_buffer_offset = 0;
 
-    CHECK_VK(vk_ResetDescriptorPool(context.device, m->descriptor_pools[m->current_frame], 0));
+    CHECK_VK(vkResetDescriptorPool(context.device, m->descriptor_pools[m->current_frame], 0));
 
     return true;
 }
@@ -639,7 +639,7 @@ bool commit_current_program_render_program_manager(render_program_manager *m,
 
     VkPipelineBindPoint bind_point = prog->shader_indices.comp == -1 ?
         VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
-    vk_CmdBindPipeline(command_buffer, bind_point, ps.pipeline);
+    vkCmdBindPipeline(command_buffer, bind_point, ps.pipeline);
 
     return true;
 }
@@ -664,7 +664,7 @@ void destroy_render_program_manager(render_program_manager *m) {
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         if (m->descriptor_pools[i]) {
-            vk_DestroyDescriptorPool(context.device, m->descriptor_pools[i], NULL);
+            vkDestroyDescriptorPool(context.device, m->descriptor_pools[i], NULL);
             m->descriptor_pools[i] = VK_NULL_HANDLE;
         }
     }

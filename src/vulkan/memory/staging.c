@@ -44,11 +44,11 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         manager->buffers[i].offset = 0;
-        CHECK_VK(vk_CreateBuffer(context.device, &buffer_info, NULL, &manager->buffers[i].buffer));
+        CHECK_VK(vkCreateBuffer(context.device, &buffer_info, NULL, &manager->buffers[i].buffer));
     }
 
     VkMemoryRequirements mem_requirements;
-    vk_GetBufferMemoryRequirements(context.device, manager->buffers[0].buffer, &mem_requirements);
+    vkGetBufferMemoryRequirements(context.device, manager->buffers[0].buffer, &mem_requirements);
 
     VkDeviceSize align_mod = mem_requirements.size % mem_requirements.alignment;
     VkDeviceSize aligned_size = align_mod == 0 ?
@@ -63,11 +63,11 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
         .memoryTypeIndex = memory_type_index
     };
 
-    CHECK_VK(vk_AllocateMemory(context.device, &mem_info, NULL, &manager->memory));
+    CHECK_VK(vkAllocateMemory(context.device, &mem_info, NULL, &manager->memory));
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         VkMemoryRequirements current_mem_requirements;
-        vk_GetBufferMemoryRequirements(context.device, manager->buffers[i].buffer, &current_mem_requirements);
+        vkGetBufferMemoryRequirements(context.device, manager->buffers[i].buffer, &current_mem_requirements);
         if (current_mem_requirements.size != mem_requirements.size ||
             current_mem_requirements.alignment != mem_requirements.alignment ||
             current_mem_requirements.memoryTypeBits != mem_requirements.memoryTypeBits)
@@ -75,10 +75,10 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
             log_error("Different memory requirements for stage buffers");
             return false;
         }
-        CHECK_VK(vk_BindBufferMemory(context.device, manager->buffers[i].buffer, manager->memory, i * aligned_size));
+        CHECK_VK(vkBindBufferMemory(context.device, manager->buffers[i].buffer, manager->memory, i * aligned_size));
     }
 
-    CHECK_VK(vk_MapMemory(context.device, manager->memory, 0, aligned_size * NUM_FRAME_DATA, 0,
+    CHECK_VK(vkMapMemory(context.device, manager->memory, 0, aligned_size * NUM_FRAME_DATA, 0,
         (void**) &manager->mapped_data));
 
     VkCommandPoolCreateInfo pool_info = {
@@ -88,7 +88,7 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
         .queueFamilyIndex = context.graphics_family_index
     };
 
-    CHECK_VK(vk_CreateCommandPool(context.device, &pool_info, NULL, &manager->command_pool));
+    CHECK_VK(vkCreateCommandPool(context.device, &pool_info, NULL, &manager->command_pool));
 
     VkCommandBufferAllocateInfo command_buffer_alloc_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -112,10 +112,10 @@ bool init_buffers_vk_staging_manager(vk_staging_manager *manager) {
     };
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-        CHECK_VK(vk_AllocateCommandBuffers(context.device, &command_buffer_alloc_info,
+        CHECK_VK(vkAllocateCommandBuffers(context.device, &command_buffer_alloc_info,
             &manager->buffers[i].command_buffer));
-        CHECK_VK(vk_CreateFence(context.device, &fence_info, NULL, &manager->buffers[i].fence));
-        CHECK_VK(vk_BeginCommandBuffer(manager->buffers[i].command_buffer, &command_buffer_begin_info));
+        CHECK_VK(vkCreateFence(context.device, &fence_info, NULL, &manager->buffers[i].fence));
+        CHECK_VK(vkBeginCommandBuffer(manager->buffers[i].command_buffer, &command_buffer_begin_info));
 
         manager->buffers[i].data = (byte*) manager->mapped_data + (i * aligned_size);
     }
@@ -128,8 +128,8 @@ static bool wait_stage(vk_staging_buffer *stage) {
         return true;
     }
 
-    CHECK_VK(vk_WaitForFences(context.device, 1, &stage->fence, VK_TRUE, UINT64_MAX));
-    CHECK_VK(vk_ResetFences(context.device, 1, &stage->fence));
+    CHECK_VK(vkWaitForFences(context.device, 1, &stage->fence, VK_TRUE, UINT64_MAX));
+    CHECK_VK(vkResetFences(context.device, 1, &stage->fence));
 
     stage->offset = 0;
     stage->submitted = false;
@@ -141,7 +141,7 @@ static bool wait_stage(vk_staging_buffer *stage) {
         .pInheritanceInfo = NULL
     };
 
-    CHECK_VK(vk_BeginCommandBuffer(stage->command_buffer, &command_buffer_begin_info));
+    CHECK_VK(vkBeginCommandBuffer(stage->command_buffer, &command_buffer_begin_info));
 
     return true;
 }
@@ -193,10 +193,10 @@ void flush_vk_staging_manager(vk_staging_manager *manager) {
         .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
         .dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT
     };
-    vk_CmdPipelineBarrier(stage->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+    vkCmdPipelineBarrier(stage->command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
         0, 1, &barrier, 0, NULL, 0, NULL);
 
-    vk_EndCommandBuffer(stage->command_buffer);
+    vkEndCommandBuffer(stage->command_buffer);
 
     VkMappedMemoryRange memory_range = {
         .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
@@ -205,7 +205,7 @@ void flush_vk_staging_manager(vk_staging_manager *manager) {
         .offset = stage->offset,
         .size = VK_WHOLE_SIZE
     };
-    vk_FlushMappedMemoryRanges(context.device, 1, &memory_range);
+    vkFlushMappedMemoryRanges(context.device, 1, &memory_range);
 
     VkSubmitInfo submit_info = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -218,7 +218,7 @@ void flush_vk_staging_manager(vk_staging_manager *manager) {
         .signalSemaphoreCount = 0,
         .pSignalSemaphores = NULL
     };
-    vk_QueueSubmit(context.graphics_queue, 1, &submit_info, stage->fence);
+    vkQueueSubmit(context.graphics_queue, 1, &submit_info, stage->fence);
     stage->submitted = true;
 
     manager->current_buffer = (manager->current_buffer + 1) % NUM_FRAME_DATA;
@@ -226,24 +226,24 @@ void flush_vk_staging_manager(vk_staging_manager *manager) {
 
 void destroy_vk_staging_manager(vk_staging_manager *manager) {
     if (manager->memory) {
-        vk_UnmapMemory(context.device, manager->memory);
-        vk_FreeMemory(context.device, manager->memory, NULL);
+        vkUnmapMemory(context.device, manager->memory);
+        vkFreeMemory(context.device, manager->memory, NULL);
         manager->memory = VK_NULL_HANDLE;
         manager->mapped_data = NULL;
     }
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
         if (manager->buffers[i].fence)
-            vk_DestroyFence(context.device, manager->buffers[i].fence, NULL);
+            vkDestroyFence(context.device, manager->buffers[i].fence, NULL);
         if (manager->buffers[i].buffer)
-            vk_DestroyBuffer(context.device, manager->buffers[i].buffer, NULL);
+            vkDestroyBuffer(context.device, manager->buffers[i].buffer, NULL);
         if (manager->buffers[i].command_buffer)
-            vk_FreeCommandBuffers(context.device, manager->command_pool, 1, &manager->buffers[i].command_buffer);
+            vkFreeCommandBuffers(context.device, manager->command_pool, 1, &manager->buffers[i].command_buffer);
         init_vk_staging_buffer(&manager->buffers[i]);
     }
 
     if (manager->command_pool) {
-        vk_DestroyCommandPool(context.device, manager->command_pool, NULL);
+        vkDestroyCommandPool(context.device, manager->command_pool, NULL);
         manager->command_pool = VK_NULL_HANDLE;
     }
 

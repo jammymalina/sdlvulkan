@@ -74,10 +74,10 @@ bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buf
         buffer_info.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     }
 
-    CHECK_VK(vk_CreateBuffer(context.device, &buffer_info, NULL, &buffer->buffer));
+    CHECK_VK(vkCreateBuffer(context.device, &buffer_info, NULL, &buffer->buffer));
 
     VkMemoryRequirements mem_requirements;
-    vk_GetBufferMemoryRequirements(context.device, buffer->buffer, &mem_requirements);
+    vkGetBufferMemoryRequirements(context.device, buffer->buffer, &mem_requirements);
 
     vk_memory_usage_type mem_usage = buffer->usage == BU_STATIC ?
         VULKAN_MEMORY_USAGE_GPU_ONLY : VULKAN_MEMORY_USAGE_CPU_TO_GPU;
@@ -89,7 +89,7 @@ bool alloc_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize alloc_size, buf
         return false;
     }
 
-    CHECK_VK(vk_BindBufferMemory(context.device, buffer->buffer, buffer->allocation.device_memory,
+    CHECK_VK(vkBindBufferMemory(context.device, buffer->buffer, buffer->allocation.device_memory,
         buffer->allocation.offset));
 
     if (data != NULL) {
@@ -167,7 +167,7 @@ void free_vk_buffer(vk_buffer *buffer) {
     }
 
     vk_free_allocation(&buffer->allocation);
-    vk_DestroyBuffer(context.device, buffer->buffer, NULL);
+    vkDestroyBuffer(context.device, buffer->buffer, NULL);
     buffer->buffer = VK_NULL_HANDLE;
     init_vk_allocation(&buffer->allocation);
 
@@ -206,7 +206,7 @@ bool update_data_vk_buffer(vk_buffer *buffer, void *data, VkDeviceSize size, VkD
         .dstOffset = get_buffer_offset(buffer) + offset,
         .size      = size
     };
-    vk_CmdCopyBuffer(command_buffer, stage_buffer, buffer->buffer, 1, &buffer_copy);
+    vkCmdCopyBuffer(command_buffer, stage_buffer, buffer->buffer, 1, &buffer_copy);
 
     return true;
 }

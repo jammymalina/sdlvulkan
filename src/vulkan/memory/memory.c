@@ -72,14 +72,14 @@ bool init_vk_block_memory(vk_block *block) {
         .memoryTypeIndex = block->memory_type_index
     };
 
-    CHECK_VK(vk_AllocateMemory(context.device, &allocate_info, NULL, &block->device_memory));
+    CHECK_VK(vkAllocateMemory(context.device, &allocate_info, NULL, &block->device_memory));
 
     if (block->device_memory == VK_NULL_HANDLE) {
         return false;
     }
 
     if (is_host_visible(block->usage)) {
-        CHECK_VK(vk_MapMemory(context.device, block->device_memory, 0, block->size, 0, (void**) &block->data));
+        CHECK_VK(vkMapMemory(context.device, block->device_memory, 0, block->size, 0, (void**) &block->data));
     }
 
     block->head = mem_alloc(sizeof(vk_chunk));
@@ -285,10 +285,10 @@ void free_allocation_vk_block(vk_block *block, vk_allocation *allocation) {
 
 void destroy_vk_block(vk_block *block) {
     if (is_host_visible(block->usage)) {
-        vk_UnmapMemory(context.device, block->device_memory);
+        vkUnmapMemory(context.device, block->device_memory);
     }
 
-    vk_FreeMemory(context.device, block->device_memory, NULL);
+    vkFreeMemory(context.device, block->device_memory, NULL);
     block->device_memory = VK_NULL_HANDLE;
 
     vk_chunk *prev = NULL;

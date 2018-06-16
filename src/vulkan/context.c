@@ -112,7 +112,7 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
         .ppEnabledExtensionNames = extensions
     };
 
-    VkResult result = vk_CreateInstance(&vk_instance_create_info, NULL, &ctx->instance);
+    VkResult result = vkCreateInstance(&vk_instance_create_info, NULL, &ctx->instance);
     if (result != VK_SUCCESS || ctx->instance == VK_NULL_HANDLE) {
         ctx->instance = VK_NULL_HANDLE;
         mem_free(extensions);
@@ -134,7 +134,7 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
             .pfnCallback = vulkan_debug_callback,
             .pUserData = NULL
         };
-        CHECK_VK(vk_CreateDebugReportCallbackEXT(ctx->instance, &debug_callback_info, NULL, &ctx->debug_callback));
+        CHECK_VK(vkCreateDebugReportCallbackEXT(ctx->instance, &debug_callback_info, NULL, &ctx->debug_callback));
         return true;
     }
 #endif
@@ -160,11 +160,11 @@ static bool enumerate_physical_devices(vk_context *ctx) {
     uint32_t num_physical_devices = 0;
     VkPhysicalDevice physical_devices[MAX_PHYSICAL_DEVICES];
 
-    CHECK_VK(vk_EnumeratePhysicalDevices(ctx->instance, &num_physical_devices, NULL));
+    CHECK_VK(vkEnumeratePhysicalDevices(ctx->instance, &num_physical_devices, NULL));
     CHECK_VK_VAL(num_physical_devices > 0, "No physical_devices");
     CHECK_VK_VAL(num_physical_devices <= MAX_PHYSICAL_DEVICES, "Not enough space for physical devices");
 
-    CHECK_VK(vk_EnumeratePhysicalDevices(ctx->instance, &num_physical_devices, physical_devices));
+    CHECK_VK(vkEnumeratePhysicalDevices(ctx->instance, &num_physical_devices, physical_devices));
     CHECK_VK_VAL(num_physical_devices > 0, "No physical devices");
 
     ctx->gpus = mem_alloc(num_physical_devices * sizeof(gpu_info));
@@ -243,17 +243,17 @@ static bool create_device(vk_context *ctx) {
         .pEnabledFeatures        = &device_features
     };
 
-    CHECK_VK(vk_CreateDevice(gpu->device, &info, NULL, &ctx->device));
+    CHECK_VK(vkCreateDevice(gpu->device, &info, NULL, &ctx->device));
 
     return true;
 }
 
 static bool init_queues(vk_context *ctx) {
-    vk_GetDeviceQueue(ctx->device, ctx->graphics_family_index, 0, &ctx->graphics_queue);
+    vkGetDeviceQueue(ctx->device, ctx->graphics_family_index, 0, &ctx->graphics_queue);
     if (ctx->graphics_family_index == ctx->present_family_index) {
         ctx->present_queue = ctx->graphics_queue;
     } else {
-        vk_GetDeviceQueue(ctx->device, ctx->present_family_index, 0, &ctx->present_queue);
+        vkGetDeviceQueue(ctx->device, ctx->present_family_index, 0, &ctx->present_queue);
     }
 
     return true;
@@ -266,8 +266,8 @@ static bool create_semaphores(vk_context *ctx) {
         .flags = 0
     };
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-        CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->acquire_semaphores[i]));
-        CHECK_VK(vk_CreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->render_complete_semaphores[i]));
+        CHECK_VK(vkCreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->acquire_semaphores[i]));
+        CHECK_VK(vkCreateSemaphore(ctx->device, &sempahore_info, NULL, &ctx->render_complete_semaphores[i]));
     }
     return true;
 }
@@ -283,7 +283,7 @@ static bool create_query_pools(vk_context *ctx) {
     };
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-        CHECK_VK(vk_CreateQueryPool(ctx->device, &query_pool_info, NULL, &ctx->query_pools[i]));
+        CHECK_VK(vkCreateQueryPool(ctx->device, &query_pool_info, NULL, &ctx->query_pools[i]));
     }
 
     return true;
@@ -297,7 +297,7 @@ static bool create_command_pool(vk_context *ctx) {
         .queueFamilyIndex = ctx->graphics_family_index
     };
 
-    CHECK_VK(vk_CreateCommandPool(ctx->device, &pool_info, NULL, &ctx->command_pool));
+    CHECK_VK(vkCreateCommandPool(ctx->device, &pool_info, NULL, &ctx->command_pool));
 
     return true;
 }
@@ -311,7 +311,7 @@ static bool create_command_buffers(vk_context *ctx) {
         .commandBufferCount = NUM_FRAME_DATA
     };
 
-    CHECK_VK(vk_AllocateCommandBuffers(ctx->device, &allocate_info, ctx->command_buffers));
+    CHECK_VK(vkAllocateCommandBuffers(ctx->device, &allocate_info, ctx->command_buffers));
 
     VkFenceCreateInfo fence_info = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -320,7 +320,7 @@ static bool create_command_buffers(vk_context *ctx) {
     };
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
-        CHECK_VK(vk_CreateFence(ctx->device, &fence_info, NULL, &ctx->command_buffer_fences[i]));
+        CHECK_VK(vkCreateFence(ctx->device, &fence_info, NULL, &ctx->command_buffer_fences[i]));
     }
 
     return true;
@@ -369,7 +369,7 @@ static bool create_swapchain(vk_context *ctx) {
         .oldSwapchain          = ctx->swapchain
     };
 
-    CHECK_VK(vk_CreateSwapchainKHR(ctx->device, &swapchain_info, NULL, &ctx->swapchain));
+    CHECK_VK(vkCreateSwapchainKHR(ctx->device, &swapchain_info, NULL, &ctx->swapchain));
 
     ctx->surface_format = surface_format;
     ctx->present_mode = present_mode;
@@ -398,10 +398,10 @@ static bool get_depth_format(vk_context *ctx) {
 
 static bool create_render_targets(vk_context *ctx) {
     uint32_t num_images = 0;
-    CHECK_VK(vk_GetSwapchainImagesKHR(ctx->device, ctx->swapchain, &num_images, NULL));
+    CHECK_VK(vkGetSwapchainImagesKHR(ctx->device, ctx->swapchain, &num_images, NULL));
     CHECK_VK_VAL(num_images > 0, "No swapchain images");
 
-    CHECK_VK(vk_GetSwapchainImagesKHR(ctx->device, ctx->swapchain, &num_images, ctx->swapchain_images));
+    CHECK_VK(vkGetSwapchainImagesKHR(ctx->device, ctx->swapchain, &num_images, ctx->swapchain_images));
     CHECK_VK_VAL(num_images > 0, "No swapchain images");
 
     for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
@@ -427,12 +427,12 @@ static bool create_render_targets(vk_context *ctx) {
             }
         };
 
-        CHECK_VK(vk_CreateImageView(ctx->device, &image_view_info, NULL, &ctx->swapchain_views[i]));
+        CHECK_VK(vkCreateImageView(ctx->device, &image_view_info, NULL, &ctx->swapchain_views[i]));
     }
 
     gpu_info *gpu = &ctx->gpus[ctx->selected_gpu];
     VkImageFormatProperties fmt_props = {};
-    vk_GetPhysicalDeviceImageFormatProperties(gpu->device, ctx->surface_format.format,
+    vkGetPhysicalDeviceImageFormatProperties(gpu->device, ctx->surface_format.format,
         VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &fmt_props);
 
     if (render_config.desired_sample_count >= 16 && (fmt_props.sampleCounts & VK_SAMPLE_COUNT_16_BIT)) {
@@ -539,7 +539,7 @@ static bool create_render_pass(vk_context *ctx) {
         .pDependencies   = subpass_dependencies
     };
 
-    CHECK_VK(vk_CreateRenderPass(ctx->device, &render_pass_info, NULL, &ctx->render_pass));
+    CHECK_VK(vkCreateRenderPass(ctx->device, &render_pass_info, NULL, &ctx->render_pass));
 
     return true;
 }
@@ -558,7 +558,7 @@ static bool create_framebuffers(vk_context *ctx) {
             .height          = render_config.height,
             .layers          = 1
         };
-        CHECK_VK(vk_CreateFramebuffer(ctx->device, &framebuffer_info, NULL, &ctx->framebuffers[i]));
+        CHECK_VK(vkCreateFramebuffer(ctx->device, &framebuffer_info, NULL, &ctx->framebuffers[i]));
     }
 
     return true;
@@ -573,7 +573,7 @@ static bool create_pipeline_cache(vk_context *ctx) {
         .pInitialData = NULL
     };
 
-    CHECK_VK(vk_CreatePipelineCache(ctx->device, &pipeline_cache_info, NULL, &ctx->pipeline_cache));
+    CHECK_VK(vkCreatePipelineCache(ctx->device, &pipeline_cache_info, NULL, &ctx->pipeline_cache));
 
     return true;
 }
@@ -616,57 +616,57 @@ void shutdown_vulkan(vk_context *ctx) {
     destroy_ren_pm();
     vk_destroy_stage_manager();
     vk_destroy_allocator();
-    if (vk_DestroyFramebuffer) {
+    if (vkDestroyFramebuffer) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->framebuffers[i]) {
-                vk_DestroyFramebuffer(ctx->device, ctx->framebuffers[i], NULL);
+                vkDestroyFramebuffer(ctx->device, ctx->framebuffers[i], NULL);
             }
         }
     }
-    if (vk_DestroyPipelineCache && ctx->pipeline_cache) {
-        vk_DestroyPipelineCache(ctx->device, ctx->pipeline_cache, NULL);
+    if (vkDestroyPipelineCache && ctx->pipeline_cache) {
+        vkDestroyPipelineCache(ctx->device, ctx->pipeline_cache, NULL);
     }
-    if (vk_DestroyRenderPass && ctx->render_pass) {
-        vk_DestroyRenderPass(ctx->device, ctx->render_pass, NULL);
+    if (vkDestroyRenderPass && ctx->render_pass) {
+        vkDestroyRenderPass(ctx->device, ctx->render_pass, NULL);
     }
     destroy_image(&ctx->depth_image);
-    if (vk_DestroyImageView) {
+    if (vkDestroyImageView) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->swapchain_views[i]) {
-                vk_DestroyImageView(ctx->device, ctx->swapchain_views[i], NULL);
+                vkDestroyImageView(ctx->device, ctx->swapchain_views[i], NULL);
             }
         }
     }
-    if (vk_DestroySwapchainKHR && ctx->swapchain) {
-        vk_DestroySwapchainKHR(ctx->device, ctx->swapchain, NULL);
+    if (vkDestroySwapchainKHR && ctx->swapchain) {
+        vkDestroySwapchainKHR(ctx->device, ctx->swapchain, NULL);
     }
-    if (vk_DestroyFence) {
+    if (vkDestroyFence) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->command_buffer_fences[i]) {
-                vk_DestroyFence(ctx->device, ctx->command_buffer_fences[i], NULL);
+                vkDestroyFence(ctx->device, ctx->command_buffer_fences[i], NULL);
             }
         }
     }
-    if (vk_FreeCommandBuffers && ctx->command_buffers[0]) {
-        vk_FreeCommandBuffers(ctx->device, ctx->command_pool, NUM_FRAME_DATA, ctx->command_buffers);
+    if (vkFreeCommandBuffers && ctx->command_buffers[0]) {
+        vkFreeCommandBuffers(ctx->device, ctx->command_pool, NUM_FRAME_DATA, ctx->command_buffers);
     }
-    if (vk_DestroyCommandPool && ctx->command_pool) {
-        vk_DestroyCommandPool(ctx->device, ctx->command_pool, NULL);
+    if (vkDestroyCommandPool && ctx->command_pool) {
+        vkDestroyCommandPool(ctx->device, ctx->command_pool, NULL);
     }
-    if (vk_DestroyQueryPool) {
+    if (vkDestroyQueryPool) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->query_pools[i]) {
-                vk_DestroyQueryPool(ctx->device, ctx->query_pools[i], NULL);
+                vkDestroyQueryPool(ctx->device, ctx->query_pools[i], NULL);
             }
         }
     }
-    if (vk_DestroySemaphore) {
+    if (vkDestroySemaphore) {
         for (size_t i = 0; i < NUM_FRAME_DATA; i++) {
             if (ctx->acquire_semaphores[i]) {
-                vk_DestroySemaphore(ctx->device, ctx->acquire_semaphores[i], NULL);
+                vkDestroySemaphore(ctx->device, ctx->acquire_semaphores[i], NULL);
             }
             if (ctx->render_complete_semaphores[i]) {
-                vk_DestroySemaphore(ctx->device, ctx->render_complete_semaphores[i], NULL);
+                vkDestroySemaphore(ctx->device, ctx->render_complete_semaphores[i], NULL);
             }
         }
     }
@@ -676,21 +676,21 @@ void shutdown_vulkan(vk_context *ctx) {
         }
         mem_free(ctx->gpus);
     }
-    if (ctx->device && vk_DestroyDevice) {
-        vk_DestroyDevice(ctx->device, NULL);
+    if (ctx->device && vkDestroyDevice) {
+        vkDestroyDevice(ctx->device, NULL);
     }
-    if (ctx->surface && vk_DestroySurfaceKHR) {
-        vk_DestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
+    if (ctx->surface && vkDestroySurfaceKHR) {
+        vkDestroySurfaceKHR(ctx->instance, ctx->surface, NULL);
     }
 
     #ifdef DEBUG
-        if (ctx->debug_callback && vk_DestroyDebugReportCallbackEXT) {
-            vk_DestroyDebugReportCallbackEXT(ctx->instance, ctx->debug_callback, NULL);
+        if (ctx->debug_callback && vkDestroyDebugReportCallbackEXT) {
+            vkDestroyDebugReportCallbackEXT(ctx->instance, ctx->debug_callback, NULL);
         }
     #endif
 
-    if (ctx->instance && vk_DestroyInstance) {
-        vk_DestroyInstance(ctx->instance, NULL);
+    if (ctx->instance && vkDestroyInstance) {
+        vkDestroyInstance(ctx->instance, NULL);
     }
     init_vk_context(ctx);
     SDL_Vulkan_UnloadLibrary();
