@@ -1,53 +1,120 @@
 #include "./input.h"
+#include "../logger/logger.h"
 
-input_info input;
+input_handler input;
 
-bool init_input_info(input_info *inp_i) {
+bool init_input_handler(input_handler *inp) {
     SDL_PumpEvents();
-    SDL_GetMouseState(&inp_i->mouse.x, &inp_i->mouse.y);
-    inp_i->mouse.dx = 0, inp_i->mouse.dy = 0;
-    inp_i->mouse.left_button_down  = SDL_BUTTON(SDL_BUTTON_LEFT);
-    inp_i->mouse.right_button_down = SDL_BUTTON(SDL_BUTTON_RIGHT);
+    SDL_GetMouseState(&inp->mouse.x, &inp->mouse.y);
+    inp->mouse.left_button_down  = SDL_BUTTON(SDL_BUTTON_LEFT);
+    inp->mouse.right_button_down = SDL_BUTTON(SDL_BUTTON_RIGHT);
+    inp->mouse.middle_button_down = SDL_BUTTON(SDL_BUTTON_MIDDLE);
+
+    for (size_t i = 0; i < EVENT_TYPES_TOTAL; i++) {
+        for (size_t j = 0; j < INPUT_MAX_CALLBACK_FUNCTIONS; j++) {
+            inp->callbacks[i][j] = NULL;
+        }
+        inp->callbacks_count[i] = 0;
+    }
+
     return true;
 }
 
-static void handle_mouse_button_event(input_info *inp_i, SDL_Event *event) {
+static void handle_mouse_button_event(input_handler *inp, SDL_Event *event) {
     SDL_MouseButtonEvent me = event->button;
     bool pressed = me.state == SDL_PRESSED;
     switch (me.button) {
         case SDL_BUTTON_LEFT:
-            inp_i->mouse.left_button_down = pressed;
+            inp->mouse.left_button_down = pressed;
             break;
         case SDL_BUTTON_RIGHT:
-            inp_i->mouse.right_button_down = pressed;
+            inp->mouse.right_button_down = pressed;
             break;
     }
 }
 
-static void handle_mouse_motion_event(input_info *inp_i, SDL_Event *event) {
+static void handle_mouse_motion_event(input_handler *inp, SDL_Event *event) {
     SDL_MouseMotionEvent me = event->motion;
-    inp_i->mouse.x = me.x;
-    inp_i->mouse.y = me.y;
-    inp_i->mouse.dx = me.xrel;
-    inp_i->mouse.dy = me.yrel;
+    input_event e = {
+        .mousemotion = {
+            .x = me.x,
+            .y = me.y,
+            .dx = me.xrel,
+            .dy = me.yrel,
+            .left_button_down   = (me.state & SDL_BUTTON_LMASK) != 0,
+            .right_button_down  = (me.state & SDL_BUTTON_RMASK) != 0,
+            .middle_button_down = (me.state & SDL_BUTTON_MMASK) != 0
+        }
+    };
+
+    size_t cc = inp->callbacks_count[MOUSE_MOVE];
+    for (size_t i = 0; i < cc; i++) {
+        input_event_callback *f = inp->callbacks[MOUSE_MOVE][i];
+        f(&e);
+    }
+
+    inp->mouse.x = me.x;
+    inp->mouse.y = me.y;
 }
 
-void update_input_info(input_info *inp_i, SDL_Event *event) {
+void update_input_handler(input_handler *inp, SDL_Event *event) {
     switch (event->type) {
         case SDL_MOUSEMOTION:
-            handle_mouse_motion_event(inp_i, event);
+            handle_mouse_motion_event(inp, event);
             break;
         case SDL_MOUSEBUTTONUP:
         case SDL_MOUSEBUTTONDOWN:
-            handle_mouse_button_event(inp_i, event);
+            handle_mouse_button_event(inp, event);
             break;
     }
 }
 
+bool add_event_listener_input_handler(input_handler *inp, input_event_type event_type, input_event_callback *callback) {
+    size_t cc = inp->callbacks_count[event_type];
+    if (cc >= INPUT_MAX_CALLBACK_FUNCTIONS) {
+        log_error("Unable to add event listener, reached the callback function size limit for the event type");
+        return false;
+    }
+
+    inp->callbacks[event_type][cc] = callback;
+    inp->callbacks_count[event_type]++;
+
+    return true;
+}
+
+bool remove_event_listener_input_handler(input_handler *inp, input_event_type event_type,
+    input_event_callback *callback)
+{
+    size_t cc = inp->callbacks_count[event_type];
+
+    size_t removal_index = 0;
+    for (removal_index = 0; removal_index < cc && inp->callbacks[event_type][removal_index] != callback; removal_index++);
+
+    if (removal_index >= cc) {
+        log_error("Unable to remove event listener");
+        return false;
+    }
+
+    for (size_t i = removal_index; i < cc - 1; i++) {
+        inp->callbacks[event_type][i] = inp->callbacks[event_type][i + 1];
+    }
+    inp->callbacks_count[event_type]--;
+
+    return true;
+}
+
 bool init_input() {
-    return init_input_info(&input);
+    return init_input_handler(&input);
 }
 
 void update_input(SDL_Event *event) {
-    update_input_info(&input, event);
+    update_input_handler(&input, event);
+}
+
+bool add_event_listener(input_event_type event_type, input_event_callback *callback) {
+    return add_event_listener_input_handler(&input, event_type, callback);
+}
+
+bool remove_event_listener(input_event_type event_type, input_event_callback *callback) {
+    return remove_event_listener_input_handler(&input, event_type, callback);
 }

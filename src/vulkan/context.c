@@ -98,7 +98,7 @@ static bool create_instance(vk_context *ctx, SDL_Window *window) {
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName        = "Custom engine",
         .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion         = VK_MAKE_VERSION(1, 0, VK_HEADER_VERSION)
+        .apiVersion         = VK_API_VERSION_1_1
     };
 
     VkInstanceCreateInfo vk_instance_create_info = {
