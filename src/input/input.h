@@ -16,6 +16,7 @@ typedef enum input_event_type {
     MOUSE_DOWN,
     MOUSE_UP,
     MOUSE_MOVE,
+    MOUSE_WHEEL,
     EVENT_TYPES_TOTAL
 } input_event_type;
 
@@ -35,6 +36,9 @@ typedef struct input_event {
             int x, y;
             uint8_t button;
         } mouserelease;
+        struct {
+            int dx, dy;
+        } mousewheel;
     };
 } input_event;
 

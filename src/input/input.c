@@ -57,6 +57,23 @@ static void handle_mouse_motion_event(input_handler *inp, SDL_Event *event) {
     inp->mouse.y = me.y;
 }
 
+static void handle_mouse_wheel_event(input_handler *inp, SDL_Event *event) {
+    SDL_MouseWheelEvent we = event->wheel;
+    int mul = we.direction == SDL_MOUSEWHEEL_FLIPPED ? -1 : 1;
+    input_event e = {
+        .mousewheel = {
+            .dx = mul * we.x,
+            .dy = mul * we.y
+        }
+    };
+
+    size_t cc = inp->callbacks_count[MOUSE_WHEEL];
+    for (size_t i = 0; i < cc; i++) {
+        input_event_callback *f = inp->callbacks[MOUSE_WHEEL][i];
+        f(&e);
+    }
+}
+
 void update_input_handler(input_handler *inp, SDL_Event *event) {
     switch (event->type) {
         case SDL_MOUSEMOTION:
@@ -66,6 +83,8 @@ void update_input_handler(input_handler *inp, SDL_Event *event) {
         case SDL_MOUSEBUTTONDOWN:
             handle_mouse_button_event(inp, event);
             break;
+        case SDL_MOUSEWHEEL:
+            handle_mouse_wheel_event(inp, event);
     }
 }
 

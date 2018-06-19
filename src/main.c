@@ -53,11 +53,6 @@ void quit(int rc) {
     exit(rc);
 }
 
-static void test_mouse_motion(const input_event *e) {
-    log_info("dx: %4d dy: %4d left: %1d right: %1d middle: %1d", e->mousemotion.dx, e->mousemotion.dy,
-        e->mousemotion.left_button_down, e->mousemotion.right_button_down, e->mousemotion.middle_button_down);
-}
-
 int main(int argc, char* args[]) {
     if (!set_dirname(args[0])) {
         exit(EXIT_FAILURE);
@@ -99,8 +94,6 @@ int main(int argc, char* args[]) {
         quit(EXIT_FAILURE);
     }
     init_renderer();
-
-    add_event_listener(MOUSE_MOVE, &test_mouse_motion);
 
     bool is_running = true;
 
