@@ -94,6 +94,52 @@ void mulmat4(mat4 dest, mat4 a, mat4 b) {
 	set_mat4(dest, 3, 3, a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44);
 }
 
+bool inverse_mat4(mat4 dest, const mat4 m) {
+    float m11 = get_mat4(m, 0, 0), m12 = get_mat4(m, 0, 1), m13 = get_mat4(m, 0, 2), m14 = get_mat4(m, 0, 3);
+    float m21 = get_mat4(m, 1, 0), m22 = get_mat4(m, 1, 1), m23 = get_mat4(m, 1, 2), m24 = get_mat4(m, 1, 3);
+    float m31 = get_mat4(m, 2, 0), m32 = get_mat4(m, 2, 1), m33 = get_mat4(m, 2, 2), m34 = get_mat4(m, 2, 3);
+    float m41 = get_mat4(m, 3, 0), m42 = get_mat4(m, 3, 1), m43 = get_mat4(m, 3, 2), m44 = get_mat4(m, 3, 3);
+
+    float d11 = m23 * m34 * m42 - m24 * m33 * m42 +
+        m24 * m32 * m43 - m22 * m34 * m43 - m23 * m32 * m44 + m22 * m33 * m44;
+    float d12 = m14 * m33 * m42 - m13 * m34 * m42 -
+        m14 * m32 * m43 + m12 * m34 * m43 + m13 * m32 * m44 - m12 * m33 * m44;
+    float d13 = m13 * m24 * m42 - m14 * m23 * m42 +
+        m14 * m22 * m43 - m12 * m24 * m43 - m13 * m22 * m44 + m12 * m23 * m44;
+    float d14 = m14 * m23 * m32 - m13 * m24 * m32 -
+        m14 * m22 * m33 + m12 * m24 * m33 + m13 * m22 * m34 - m12 * m23 * m34;
+
+    float det = m11 * d11 + m21 * d12 + m31 * d13 + m41 * d14;
+    if (fabs(det) < EPSILON) {
+        identity_mat4(dest);
+        return false;
+    }
+
+    float det_inv = 1.0 / det;
+
+    set_mat4(dest, 0, 0, d11 * det_inv);
+    set_mat4(dest, 0, 1, d12 * det_inv);
+    set_mat4(dest, 0, 2, d13 * det_inv);
+    set_mat4(dest, 0, 3, d14 * det_inv);
+
+    set_mat4(dest, 1, 0, (m24 * m33 * m41 - m23 * m34 * m41 - m24 * m31 * m43 + m21 * m34 * m43 + m23 * m31 * m44 - m21 * m33 * m44) * det_inv);
+    set_mat4(dest, 1, 1, (m13 * m34 * m41 - m14 * m33 * m41 + m14 * m31 * m43 - m11 * m34 * m43 - m13 * m31 * m44 + m11 * m33 * m44) * det_inv);
+    set_mat4(dest, 1, 2, (m14 * m23 * m41 - m13 * m24 * m41 - m14 * m21 * m43 + m11 * m24 * m43 + m13 * m21 * m44 - m11 * m23 * m44) * det_inv);
+    set_mat4(dest, 1, 3, (m13 * m24 * m31 - m14 * m23 * m31 + m14 * m21 * m33 - m11 * m24 * m33 - m13 * m21 * m34 + m11 * m23 * m34) * det_inv);
+
+    set_mat4(dest, 2, 0, (m22 * m34 * m41 - m24 * m32 * m41 + m24 * m31 * m42 - m21 * m34 * m42 - m22 * m31 * m44 + m21 * m32 * m44) * det_inv);
+    set_mat4(dest, 2, 1, (m14 * m32 * m41 - m12 * m34 * m41 - m14 * m31 * m42 + m11 * m34 * m42 + m12 * m31 * m44 - m11 * m32 * m44) * det_inv);
+    set_mat4(dest, 2, 2, (m12 * m24 * m41 - m14 * m22 * m41 + m14 * m21 * m42 - m11 * m24 * m42 - m12 * m21 * m44 + m11 * m22 * m44) * det_inv);
+    set_mat4(dest, 2, 3, (m14 * m22 * m31 - m12 * m24 * m31 - m14 * m21 * m32 + m11 * m24 * m32 + m12 * m21 * m34 - m11 * m22 * m34) * det_inv);
+
+    set_mat4(dest, 3, 0, (m23 * m32 * m41 - m22 * m33 * m41 - m23 * m31 * m42 + m21 * m33 * m42 + m22 * m31 * m43 - m21 * m32 * m43) * det_inv);
+    set_mat4(dest, 3, 1, (m12 * m33 * m41 - m13 * m32 * m41 + m13 * m31 * m42 - m11 * m33 * m42 - m12 * m31 * m43 + m11 * m32 * m43) * det_inv);
+    set_mat4(dest, 3, 2, (m13 * m22 * m41 - m12 * m23 * m41 - m13 * m21 * m42 + m11 * m23 * m42 + m12 * m21 * m43 - m11 * m22 * m43) * det_inv);
+    set_mat4(dest, 3, 3, (m12 * m23 * m31 - m13 * m22 * m31 + m13 * m21 * m32 - m11 * m23 * m32 - m12 * m21 * m33 + m11 * m22 * m33) * det_inv);
+
+    return true;
+}
+
 void compose_mat4(mat4 dest, const vec3 position, const quat quaternion, const vec3 scale) {
     float x = quaternion[0], y = quaternion[1], z = quaternion[2], w = quaternion[3];
     float x2 = 2 * x, y2 = 2 * y, z2 = 2 * z;

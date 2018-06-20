@@ -24,6 +24,7 @@ void set_column_mat4(mat4 m, size_t column, const vec4 v);
 
 void mulmat4(mat4 dest, mat4 a, mat4 b);
 
+void transpose_mat4(mat4 dest, const mat4 m);
 bool inverse_mat4(mat4 dest, const mat4 m);
 void compose_mat4(mat4 dest, const vec3 position, const quat quaternion, const vec3 scale);
 
@@ -35,6 +36,5 @@ float determinant_mat4(const mat4 m);
 void ortho(mat4 dest, float left, float right, float bottom, float top);
 void perspective_RH_ZO(mat4 dest, float fov, float aspect, float z_near, float z_far);
 void look_at_RH(mat4 dest, const vec3 eye, const vec3 center, const vec3 up);
-
 
 #endif // VMATH_MAT4_H
