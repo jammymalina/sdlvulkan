@@ -1,6 +1,7 @@
 #ifndef VMATH_MAT4_H
 #define VMATH_MAT4_H
 
+#include <stdbool.h>
 #include "./mat.h"
 #include "./vec4.h"
 #include "./mat3.h"
@@ -23,7 +24,9 @@ void set_column_mat4(mat4 m, size_t column, const vec4 v);
 
 void mulmat4(mat4 dest, mat4 a, mat4 b);
 
+bool inverse_mat4(mat4 dest, const mat4 m);
 void compose_mat4(mat4 dest, const vec3 position, const quat quaternion, const vec3 scale);
+
 float determinant_mat4(const mat4 m);
 
 #define perspective(dest, fov, aspect, z_near, z_far) perspective_RH_ZO(dest, fov, aspect, z_near, z_far)
