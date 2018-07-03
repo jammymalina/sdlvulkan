@@ -10,6 +10,8 @@ bool init_input_handler(input_handler *inp) {
     inp->mouse.right_button_down = SDL_BUTTON(SDL_BUTTON_RIGHT);
     inp->mouse.middle_button_down = SDL_BUTTON(SDL_BUTTON_MIDDLE);
 
+    inp->keys.scancode_pressed = SDL_GetKeyboardState(NULL);
+
     for (size_t i = 0; i < EVENT_TYPES_TOTAL; i++) {
         for (size_t j = 0; j < INPUT_MAX_CALLBACK_FUNCTIONS; j++) {
             inp->callbacks[i][j] = NULL;

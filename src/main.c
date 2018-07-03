@@ -17,9 +17,7 @@
 
 #define MS_PER_UPDATE 16
 
-void quit(int rc);
-
-bool init_SDL() {
+static bool init_SDL() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         log_error("Error while initializing SDL: %s", SDL_GetError());
         return false;
@@ -33,7 +31,7 @@ bool init_SDL() {
     return true;
 }
 
-bool init(vk_context *ctx, SDL_Window *window) {
+static bool init(vk_context *ctx, SDL_Window *window) {
     return init_vulkan(ctx, window) &&
         init_mesh_loader(
             vertex_management_config.mesh_loader_config.max_vertex_buffer_size,
@@ -46,7 +44,7 @@ void shutdown_SDL() {
     SDL_Quit();
 }
 
-void quit(int rc) {
+static void quit(int rc) {
     shutdown_vulkan(&context);
     destroy_mesh_loader();
     shutdown_SDL();
