@@ -25,6 +25,30 @@ bool init_input_handler(input_handler *inp) {
 static void handle_mouse_button_event(input_handler *inp, SDL_Event *event) {
     SDL_MouseButtonEvent me = event->button;
     bool pressed = me.state == SDL_PRESSED;
+
+    input_event e = pressed ?
+        (struct input_event) {
+            .mousedown = {
+                .x = me.x,
+                .y = me.y,
+                .button = me.button,
+                .clicks = me.clicks
+            }
+        } : (struct input_event) {
+            .mouseup = {
+                .x = me.x,
+                .y = me.y,
+                .button = me.button
+            }
+        };
+
+    input_event_type et = pressed ? MOUSE_DOWN : MOUSE_UP;
+    size_t cc = inp->callbacks_count[et];
+    for (size_t i = 0; i < cc; i++) {
+        input_event_callback *f = inp->callbacks[et][i];
+        f(&e);
+    }
+
     switch (me.button) {
         case SDL_BUTTON_LEFT:
             inp->mouse.left_button_down = pressed;
@@ -76,6 +100,33 @@ static void handle_mouse_wheel_event(input_handler *inp, SDL_Event *event) {
     }
 }
 
+static void handle_key_event(input_handler *inp, SDL_Event *event) {
+    SDL_KeyboardEvent ke = event->key;
+    bool pressed = ke.state == SDL_PRESSED;
+
+    input_event e = pressed ?
+        (struct input_event) {
+            .keypress = {
+                .scancode = ke.keysym.scancode,
+                .keycode = ke.keysym.sym,
+                .modifiers = ke.keysym.mod
+            }
+        } : (struct input_event) {
+            .keyrelease = {
+                .scancode = ke.keysym.scancode,
+                .keycode = ke.keysym.sym,
+                .modifiers = ke.keysym.mod
+            }
+        };
+
+    input_event_type et = pressed ? KEY_PRESSED : KEY_RELEASED;
+    size_t cc = inp->callbacks_count[et];
+    for (size_t i = 0; i < cc; i++) {
+        input_event_callback *f = inp->callbacks[et][i];
+        f(&e);
+    }
+}
+
 void update_input_handler(input_handler *inp, SDL_Event *event) {
     switch (event->type) {
         case SDL_MOUSEMOTION:
@@ -87,6 +138,11 @@ void update_input_handler(input_handler *inp, SDL_Event *event) {
             break;
         case SDL_MOUSEWHEEL:
             handle_mouse_wheel_event(inp, event);
+            break;
+        case SDL_KEYUP:
+        case SDL_KEYDOWN:
+            handle_key_event(inp, event);
+            break;
     }
 }
 

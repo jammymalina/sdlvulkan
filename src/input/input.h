@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "./keyscancodes.h"
+#include "./keykeycodes.h"
 
 #define INPUT_MAX_CALLBACK_FUNCTIONS 32
 
@@ -30,32 +31,34 @@ typedef struct input_event {
             int dx, dy;
             bool left_button_down, middle_button_down, right_button_down;
         } mousemotion;
+
         struct {
             int x, y;
             uint8_t button;
             uint8_t clicks;
-        } mouseclick;
+        } mousedown;
+
         struct {
             int x, y;
             uint8_t button;
-        } mouserelease;
+        } mouseup;
+
         struct {
             int dx, dy;
         } mousewheel;
-    };
-    union {
+
         struct {
             key_scancode scancode;
-            // key_keycode keycode;
+            key_keycode keycode;
             uint16_t modifiers;
         } keypress;
+
         struct {
             key_scancode scancode;
-            // key_keycode keycode;
+            key_keycode keycode;
             uint16_t modifiers;
         } keyrelease;
     };
-
 } input_event;
 
 typedef void input_event_callback(const input_event*);
