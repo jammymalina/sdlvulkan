@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "../../vmath/vec3.h"
+#include "../../input/input.h"
 
 typedef struct mouse_orbit_controls {
     bool enabled;
@@ -38,6 +39,22 @@ typedef struct mouse_orbit_controls {
     float auto_rotate_speed;
 
     bool enable_keys;
+    struct {
+        key_scancode left;
+        key_scancode up;
+        key_scancode right;
+        key_scancode down;
+    } keys;
+
+    struct {
+        int left;
+        int middle;
+        int right;
+    } mouse_buttons;
+
+    // for reset
+    vec3 target0;
+    vec3 position0;
 } mouse_orbit_controls;
 
 #endif // MOUSE_ORBIT_CONTROLS_H

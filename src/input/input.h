@@ -28,20 +28,15 @@ typedef struct input_event {
     union {
         struct {
             int x, y;
+            uint8_t button;
+            uint8_t clicks;
+        } mousebutton;
+
+        struct {
+            int x, y;
             int dx, dy;
             bool left_button_down, middle_button_down, right_button_down;
         } mousemotion;
-
-        struct {
-            int x, y;
-            uint8_t button;
-            uint8_t clicks;
-        } mousedown;
-
-        struct {
-            int x, y;
-            uint8_t button;
-        } mouseup;
 
         struct {
             int dx, dy;
@@ -51,13 +46,7 @@ typedef struct input_event {
             key_scancode scancode;
             key_keycode keycode;
             uint16_t modifiers;
-        } keypress;
-
-        struct {
-            key_scancode scancode;
-            key_keycode keycode;
-            uint16_t modifiers;
-        } keyrelease;
+        } key;
     };
 } input_event;
 

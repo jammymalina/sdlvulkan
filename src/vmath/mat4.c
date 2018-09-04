@@ -172,6 +172,95 @@ void compose_mat4(mat4 dest, const vec3 position, const quat quaternion, const v
     set_mat4(dest, 3, 3, 1.0);
 }
 
+void decompose_mat4(const mat4 m, vec3 position, quat quaternion, vec3 scale) {
+    float det = determinant_mat4(m);
+
+    float m11 = get_mat4(m, 0, 0), m12 = get_mat4(m, 0, 1), m13 = get_mat4(m, 0, 2);
+    float m21 = get_mat4(m, 1, 0), m22 = get_mat4(m, 1, 1), m23 = get_mat4(m, 1, 2);
+    float m31 = get_mat4(m, 2, 0), m32 = get_mat4(m, 2, 1), m33 = get_mat4(m, 2, 2);
+
+    vec4 colx, coly, colz, colw;
+    get_column_mat4(colx, m, 0);
+    get_column_mat4(coly, m, 1);
+    get_column_mat4(colz, m, 2);
+    get_column_mat4(colw, m, 3);
+    colx[3] = coly[3] = colz[3] = 0;
+
+    float sx = lengthv4(colx);
+    float sy = lengthv4(coly);
+    float sz = lengthv4(colz);
+
+    if (det < 0.0) {
+        sx = -sx;
+    }
+
+    position[0] = colw[0];
+    position[1] = colw[1];
+    position[2] = colw[2];
+
+    mat4 cm = MAT4_COPY(m);
+
+    float inv_sx = fabs(sx) < EPSILON ? 0 : 1.0 / sx;
+    float inv_sy = fabs(sy) < EPSILON ? 0 : 1.0 / sy;
+    float inv_sz = fabs(sz) < EPSILON ? 0 : 1.0 / sz;
+
+    vec4 r1 = { m11 * inv_sx, m21 * inv_sx, m31 * inv_sx, 0.0 };
+    vec4 r2 = { m12 * inv_sy, m22 * inv_sy, m32 * inv_sy, 0.0 };
+    vec4 r3 = { m13 * inv_sz, m23 * inv_sz, m33 * inv_sz, 0.0 };
+
+    set_column_mat4(cm, 0, r1);
+    set_column_mat4(cm, 1, r2);
+    set_column_mat4(cm, 2, r3);
+
+    rotation_matrix_to_quat(quaternion, cm);
+
+    scale[0] = sx;
+    scale[1] = sy;
+    scale[2] = sz;
+}
+
+void rotation_matrix_to_quat(quat dest, const mat4 m) {
+    float m11 = get_mat4(m, 0, 0), m12 = get_mat4(m, 0, 1), m13 = get_mat4(m, 0, 2);
+    float m21 = get_mat4(m, 1, 0), m22 = get_mat4(m, 1, 1), m23 = get_mat4(m, 1, 2);
+    float m31 = get_mat4(m, 2, 0), m32 = get_mat4(m, 2, 1), m33 = get_mat4(m, 2, 2);
+
+    float trace = m11 + m22 + m33;
+    float s = 0.0;
+
+    if (trace > 0) {
+        s = 0.5 / sqrt(trace + 1.0);
+
+        dest[3] = 0.25 / s;
+        dest[0] = (m32 - m23) * s;
+        dest[1] = (m13 - m31) * s;
+        dest[2] = (m21 - m12) * s;
+    }
+    else if (m11 > m22 && m11 > m33) {
+        s = 2.0 * sqrt(1.0 + m11 - m22 - m33);
+
+        dest[3] = (m32 - m23) / s;
+        dest[0] = 0.25 * s;
+        dest[1] = (m12 + m21) / s;
+        dest[2] = (m13 + m31) / s;
+    }
+    else if (m22 > m33) {
+        s = 2.0 * sqrt(1.0 + m22 - m11 - m33);
+
+        dest[3] = (m13 - m31) / s;
+        dest[0] = (m12 + m21) / s;
+        dest[1] = 0.25 * s;
+        dest[2] = (m23 + m32) / s;
+    }
+    else {
+        s = 2.0 * sqrt(1.0 + m33 - m11 - m22);
+
+        dest[3] = (m21 - m12) / s;
+        dest[0] = (m13 + m31) / s;
+        dest[1] = (m23 + m32) / s;
+        dest[2] = 0.25 * s;
+    }
+}
+
 float determinant_mat4(const mat4 m) {
     float m11 = get_mat4(m, 0, 0), m12 = get_mat4(m, 0, 1), m13 = get_mat4(m, 0, 2), m14 = get_mat4(m, 0, 3);
     float m21 = get_mat4(m, 1, 0), m22 = get_mat4(m, 1, 1), m23 = get_mat4(m, 1, 2), m24 = get_mat4(m, 1, 3);

@@ -24,7 +24,7 @@ void conjugateq(quat dest, const quat q);
 void inverseq(quat dest, const quat q);
 
 void unit_vectors_to_quat(quat dest, const vec3 u, const vec3 v);
-void eulerq_xyz(quat dest, const vec3 euler_angle);
+void eulerq_xyz_to_quat(quat dest, const vec3 euler_angle);
 
 void slerpq(quat dest, const quat q, const quat v, float t);
 

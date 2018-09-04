@@ -4,10 +4,18 @@
 #include <stdbool.h>
 #include "./mat.h"
 #include "./vec4.h"
+#include "./vec3.h"
 #include "./mat3.h"
 #include "./quat.h"
 
 typedef float mat4[16];
+
+#define MAT4_COPY(m) {          \
+    m[0],  m[1],  m[2],  m[3],  \
+    m[4],  m[5],  m[6],  m[7],  \
+    m[8],  m[9],  m[10], m[11], \
+    m[12], m[13], m[14], m[15]  \
+}
 
 #define get_mat4(dest, row, column)    get_mat(dest, row, column, 4, 4)
 #define set_mat4(dest, row, column, x) set_mat(dest, row, column, x, 4, 4)
@@ -27,6 +35,8 @@ void mulmat4(mat4 dest, mat4 a, mat4 b);
 void transpose_mat4(mat4 dest, const mat4 m);
 bool inverse_mat4(mat4 dest, const mat4 m);
 void compose_mat4(mat4 dest, const vec3 position, const quat quaternion, const vec3 scale);
+void decompose_mat4(const mat4 m, vec3 position, quat quaternion, vec3 scale);
+void rotation_matrix_to_quat(quat dest, const mat4 m);
 
 float determinant_mat4(const mat4 m);
 
