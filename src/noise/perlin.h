@@ -15,4 +15,7 @@ void perlin_seed(double seed, uint16_t perm[2 * PERLIN_PERMUTATION_TABLE_LENGTH]
 double simplex_noise_2d(double xin, double yin);
 double simplex_noise_3d(double xin, double yin, double zin);
 
+double perlin_2d(double x, double y);
+double perlin_3d(double x, double y, double z);
+
 #endif
