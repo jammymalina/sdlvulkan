@@ -30,6 +30,7 @@ static inline void push_triangle_vertex(vertex *vertex_head, vertex *v) {
     if (!vertex_head) {
         return;
     }
+    normalize_vertex_float3(v->normal, v->normal);
     *vertex_head = *v;
 }
 

@@ -19,6 +19,23 @@
     typedef float vertex_float;
 #endif
 
+static inline void lerp_vertex_float3(vertex_float dest[3], const vertex_float a[3], const vertex_float b[3], vertex_float t) {
+    vertex_float ax = a[0], ay = a[1], az = a[2];
+    vertex_float bx = b[0], by = b[1], bz = b[2];
+
+    dest[0] = ax + (bx - ax) * t;
+    dest[1] = ay + (by - ay) * t;
+    dest[2] = az + (bz - az) * t;
+}
+
+static inline void normalize_vertex_float3(vertex_float dest[3], const vertex_float a[3]) {
+    vertex_float l = sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+    if (l <= 0.00001) {
+        return;
+    }
+    dest[0] = a[0] / l, dest[1] = a[1] / l, dest[2] / l;
+}
+
 typedef struct vertex {
     vertex_float position[3];
     vertex_float normal[3];
